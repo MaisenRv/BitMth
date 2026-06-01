@@ -2,10 +2,11 @@
 
 #include <cstddef>
 #include <iostream>
+
 #include <BitMth/core/utils/Errors.hpp>
 
 namespace Bitmth{
-    template <typename T = float>
+    template <typename T>
     struct Matrix{
         size_t rows, cols;
         size_t numElements;
