@@ -208,6 +208,16 @@ namespace Bitmth{
             return result;
         }
 
+        void hadamard(const Matrix<T>& matrix){
+            CHECK_ERROR_MATRIX(
+                rows != matrix.rows || cols != matrix.cols,
+                "matrix hadamard product ( (·) )",
+                "Matrix dimensions must match (rows = rows && cols == cols)"
+            );   
+            for (size_t i = 0; i < numElements; i++) m[i] *= matrix.m[i];
+            return *this;
+        }
+
         // Utils
         void clear(){ for (size_t i = 0; i < numElements; i++) m[i] = 0; }
         
