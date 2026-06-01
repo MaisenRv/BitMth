@@ -208,7 +208,7 @@ namespace Bitmth{
             return result;
         }
 
-        void hadamard(const Matrix<T>& matrix){
+        Matrix& hadamard(const Matrix<T>& matrix){
             CHECK_ERROR_MATRIX(
                 rows != matrix.rows || cols != matrix.cols,
                 "matrix hadamard product ( (·) )",
