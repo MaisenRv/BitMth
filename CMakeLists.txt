@@ -13,9 +13,6 @@ target_include_directories(BitMth INTERFACE
 
 target_compile_options(BitMth INTERFACE -O3 -ffast-math)
 
-add_executable(ejemplo_bitmth examples/main.cpp)
-target_link_libraries(ejemplo_bitmth PRIVATE BitMth)
-
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     message(STATUS "Modo desarrollo: Compilando ejemplos de BitMth")
     add_executable(ejemplo_bitmth examples/main.cpp)
