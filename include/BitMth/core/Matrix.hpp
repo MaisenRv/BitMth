@@ -228,6 +228,16 @@ namespace Bitmth{
             return result;
         }
 
+        Matrix<T> reduceSumRows() const{
+            Matrix<T> result(1, cols);
+            for (size_t i = 0; i < rows; i++){
+                for (size_t j = 0; j < cols; j++){
+                    result[j] += m[i * cols + j];  
+                }
+            }
+            return result;
+        }
+
         // Utils
         void clear(){ for (size_t i = 0; i < numElements; i++) m[i] = 0; }
         
