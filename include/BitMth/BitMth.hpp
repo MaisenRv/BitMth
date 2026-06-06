@@ -10,3 +10,6 @@
 
 // Activation
 #include <BitMth/math/Activations.hpp>
+
+// Loss
+#include <BitMth/math/Loss.hpp>

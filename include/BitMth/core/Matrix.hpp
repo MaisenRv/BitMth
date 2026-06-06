@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <iostream>
+#include <cmath>
 
 #include <BitMth/core/utils/Errors.hpp>
 
@@ -210,6 +211,16 @@ namespace Bitmth{
             return result;
         }
 
+        Matrix<T>& powInPlace(T exponent) {
+            for (size_t i = 0; i < numElements; i++) m[i] = std::pow(m[i], exponent);
+            return *this;
+        }
+        Matrix<T> pow(T exponent) const {
+            Matrix<T> result(*this);
+            for (size_t i = 0; i < numElements; i++) result.m[i] = std::pow(result.m[i], exponent);
+            return result;
+        }
+
         Matrix& hadamard(const Matrix<T>& matrix){
             CHECK_ERROR_MATRIX(
                 rows != matrix.rows || cols != matrix.cols,
@@ -218,6 +229,19 @@ namespace Bitmth{
             );   
             for (size_t i = 0; i < numElements; i++) m[i] *= matrix.m[i];
             return *this;
+        }
+
+        Matrix<T> operator/(const Matrix<T>& other) const {
+            CHECK_ERROR_MATRIX(
+                rows != other.rows || cols != other.cols,
+                "Matrix operator/",
+                "Dimensions must match for element-wise division"
+            );
+            Matrix<T> result(*this);
+            for (size_t i = 0; i < numElements; i++) {
+                result.m[i] /= other.m[i];
+            }
+            return result;
         }
 
         Matrix<T> reduceSumCols() const{
@@ -237,6 +261,12 @@ namespace Bitmth{
                     result.m[j] += m[i * cols + j];  
                 }
             }
+            return result;
+        }
+
+        T reduceSumTotal() const {
+            T result = 0;
+            for (size_t i = 0; i < numElements; i++) result += m[i];
             return result;
         }
 
