@@ -2,7 +2,7 @@
 
 #include <BitMth/core/Matrix.hpp>
 
-namespace Bitmth{
+namespace BitMth{
     namespace Math{
         enum class LossFunct: unsigned char {
             MSE,

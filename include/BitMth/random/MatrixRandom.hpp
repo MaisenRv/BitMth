@@ -5,7 +5,7 @@
 
 #include <BitMth/core/Matrix.hpp>
 
-namespace Bitmth{
+namespace BitMth{
     namespace Random{
         inline std::random_device rd;
         inline std::mt19937 gen(rd());

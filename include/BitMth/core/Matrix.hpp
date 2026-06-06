@@ -6,7 +6,7 @@
 
 #include <BitMth/core/utils/Errors.hpp>
 
-namespace Bitmth{
+namespace BitMth{
     template <typename T>
     struct Matrix{
         size_t rows, cols;
