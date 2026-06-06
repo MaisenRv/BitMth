@@ -222,7 +222,7 @@ namespace Bitmth{
             Matrix<T> result(rows, 1);
             for (size_t i = 0; i < rows; i++){
                 for (size_t j = 0; j < cols; j++){
-                    result[i] += m[i * cols + j];  
+                    result.m[i] += m[i * cols + j];  
                 }
             }
             return result;
@@ -232,7 +232,7 @@ namespace Bitmth{
             Matrix<T> result(1, cols);
             for (size_t i = 0; i < rows; i++){
                 for (size_t j = 0; j < cols; j++){
-                    result[j] += m[i * cols + j];  
+                    result.m[j] += m[i * cols + j];  
                 }
             }
             return result;
