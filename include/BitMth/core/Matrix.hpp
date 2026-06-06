@@ -93,6 +93,9 @@ namespace BitMth{
             for (size_t i = 0; i < numElements; i++) result.m[i] += number;
             return result;
         }
+        friend Matrix<T> operator+(T scalar, const Matrix<T>& matrix) {
+            return matrix + scalar;
+        }
         Matrix& operator+=(T number) {
             for (size_t i = 0; i < numElements; i++) m[i] += number;
             return *this;
@@ -103,6 +106,9 @@ namespace BitMth{
             for (size_t i = 0; i < numElements; i++) result.m[i] -= number;
             return result;
         }
+        friend Matrix<T> operator-(T scalar, const Matrix<T>& matrix) {
+            return matrix - scalar;
+        }
         Matrix& operator-=(T number) {
             for (size_t i = 0; i < numElements; i++) m[i] -= number;
             return *this;
@@ -112,6 +118,9 @@ namespace BitMth{
             Matrix<T> result(*this);
             for (size_t i = 0; i < numElements; i++) result.m[i] *= number;
             return result;
+        }
+        friend Matrix<T> operator*(T scalar, const Matrix<T>& matrix) {
+            return matrix * scalar;
         }
         Matrix& operator*=(T number) {
             for (size_t i = 0; i < numElements; i++) m[i] *= number;
