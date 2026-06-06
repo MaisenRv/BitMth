@@ -279,6 +279,23 @@ namespace BitMth{
             return result;
         }
 
+
+        Matrix<T> addRowVector(const Matrix<T>& rowVector) const {
+            CHECK_ERROR_MATRIX(
+                rowVector.rows != 1 || rowVector.cols != cols,
+                "Matrix operator (addRowVector)",
+                "Dimensions mismatch"
+            );
+            Matrix<T> result(rows, cols);
+            for (size_t i = 0; i < rows; i++) {
+                for (size_t j = 0; j < cols; j++) {
+                    size_t index = i * cols + j;
+                    result.m[index] = m[index] + rowVector.m[j];
+                }
+            }
+            return result;
+        }
+
         // Utils
         void clear(){ for (size_t i = 0; i < numElements; i++) m[i] = 0; }
         
