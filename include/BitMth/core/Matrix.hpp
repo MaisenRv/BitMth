@@ -14,6 +14,8 @@ namespace Bitmth{
 
         Matrix(size_t rows, size_t cols):
             rows(rows), cols(cols), numElements(rows * cols), m(new T[numElements]) { clear(); }
+
+        Matrix() : rows(0), cols(0), numElements(0), m(nullptr) {}
         
         ~Matrix(){ delete[] m; }
         
