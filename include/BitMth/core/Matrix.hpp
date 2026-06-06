@@ -218,6 +218,16 @@ namespace Bitmth{
             return *this;
         }
 
+        Matrix<T> reduceSumCols() const{
+            Matrix<T> result(rows, 1);
+            for (size_t i = 0; i < rows; i++){
+                for (size_t j = 0; j < cols; j++){
+                    result[i] += m[i * cols + j];  
+                }
+            }
+            return result;
+        }
+
         // Utils
         void clear(){ for (size_t i = 0; i < numElements; i++) m[i] = 0; }
         
