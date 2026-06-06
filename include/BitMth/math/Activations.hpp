@@ -7,68 +7,86 @@
 
 namespace Bitmth{
     namespace Math{
-
-        template <typename T>
-        void relu(Matrix<T>& matrix){
-            for (size_t i = 0; i < matrix.numElements; i++) {
-                matrix.m[i] = std::max( T(0.0), matrix.m[i]);
-            }
+        enum class ActivationFunct: unsigned char {
+            RELU,
+            SIGMOID,
+            TANH,
+            SOFTMAX
         };
 
         template <typename T>
-        void reluDerivative(Matrix<T>& matrix){
-            for (size_t i = 0; i < matrix.numElements; i++) {
-                matrix.m[i] = matrix.m[i] > T(0.0) ? T(1.0) : T(0.0);
+        Matrix<T> relu(const Matrix<T>& matrixZ){
+            Matrix<T> result(matrixZ.rows, matrixZ.cols);
+            for (size_t i = 0; i < matrixZ.numElements; i++) {
+                result.m[i] = std::max( T(0.0), matrixZ.m[i]);
             }
+            return result;
         };
 
         template <typename T>
-        void sigmoid(Matrix<T>& matrix){
-            for (size_t i = 0; i < matrix.numElements; i++) {
-                matrix.m[i] = T(1.0) / ( T(1.0) + std::exp(-matrix.m[i]) );
+        Matrix<T> reluDerivative(const Matrix<T>& matrixZ, const Matrix<T>& matrixA){
+            Matrix<T> result(matrixZ.rows, matrixZ.cols);
+            for (size_t i = 0; i < matrixZ.numElements; i++) {
+                result.m[i] = matrixZ.m[i] > T(0.0) ? T(1.0) : T(0.0);
             }
+            return result;
         };
 
         template <typename T>
-        void sigmoidDerivative(Matrix<T>& matrix){
-            for (size_t i = 0; i < matrix.numElements; i++) {
-                matrix.m[i] = matrix.m[i] * ( T(1.0) - matrix.m[i] );
+        Matrix<T> sigmoid(const Matrix<T>& matrixZ){
+            Matrix<T> result(matrixZ.rows, matrixZ.cols);
+            for (size_t i = 0; i < matrixZ.numElements; i++) {
+                result.m[i] = T(1.0) / ( T(1.0) + std::exp(-matrixZ.m[i]) );
             }
+            return result;
         };
 
         template <typename T>
-        void Tanh(Matrix<T>& matrix){
-            for (size_t i = 0; i < matrix.numElements; i++) {
-                matrix.m[i] = std::tanh(matrix.m[i]);
+        Matrix<T> sigmoidDerivative(const Matrix<T>& matrixZ, const Matrix<T>& matrixA){
+            Matrix<T> result(matrixA.rows, matrixA.cols);
+            for (size_t i = 0; i < matrixA.numElements; i++) {
+                result.m[i] = matrixA.m[i] * ( T(1.0) - matrixA.m[i] );
             }
+            return result;
         };
 
         template <typename T>
-        void TanhDerivative(Matrix<T>& matrix){
-            for (size_t i = 0; i < matrix.numElements; i++) {
-                matrix.m[i] = T(1.0) - (matrix.m[i] * matrix.m[i]);
+        Matrix<T> Tanh(const Matrix<T>& matrixZ){
+            Matrix<T> result(matrixZ.rows, matrixZ.cols);
+            for (size_t i = 0; i < matrixZ.numElements; i++) {
+                result.m[i] = std::tanh(matrixZ.m[i]);
             }
+            return result;
         };
 
         template <typename T>
-        Matrix<T> softmax(const Matrix<T>& matrix){
-            Matrix<T> result(matrix.rows, matrix.cols);
-            for (size_t r = 0; r < matrix.rows; r++) {
-                size_t rowOffset = r * matrix.cols;
+        Matrix<T> TanhDerivative(const Matrix<T>& matrixZ, const Matrix<T>& matrixA){
+            Matrix<T> result(matrixA.rows, matrixA.cols);
+            for (size_t i = 0; i < matrixA.numElements; i++) {
+                result.m[i] = T(1.0) - (matrixA.m[i] * matrixA.m[i]);
+            }
+            return result;
+        };
 
-                T maxVal = matrix.m[rowOffset];
-                for (size_t c = 1; c < matrix.cols; c++) {
-                    maxVal = std::max(maxVal, matrix.m[rowOffset + c]);
+        template <typename T>
+        Matrix<T> softmax(const Matrix<T>& matrixZ){
+            Matrix<T> result(matrixZ.rows, matrixZ.cols);
+            for (size_t r = 0; r < matrixZ.rows; r++) {
+                size_t rowOffset = r * matrixZ.cols;
+
+                T maxVal = matrixZ.m[rowOffset];
+                for (size_t c = 1; c < matrixZ.cols; c++) {
+                    maxVal = std::max(maxVal, matrixZ.m[rowOffset + c]);
                 }
                 
                 T sum = T(0.0);
-                for (size_t c = 0; c < matrix.cols; c++) {
+                for (size_t c = 0; c < matrixZ.cols; c++) {
                     size_t idx = rowOffset + c;
-                    result.m[idx] = std::exp(matrix.m[idx] - maxVal);
+                    result.m[idx] = std::exp(matrixZ.m[idx] - maxVal);
                     sum += result.m[idx];
                 }
                 
-                for (size_t c = 0; c < matrix.cols; c++) {
+                for (size_t c = 0; c < matrixZ.cols; c++) {
                     result.m[rowOffset + c] /= sum;
                 }
             }

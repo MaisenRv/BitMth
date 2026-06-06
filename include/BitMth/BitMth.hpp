@@ -7,3 +7,6 @@
 
 // RANDOM
 #include <BitMth/random/MatrixRandom.hpp>
+
+// Activation
+#include <BitMth/math/Activations.hpp>
