@@ -1,15 +1,5 @@
 #pragma once
 
-
-// CORE
-#include <BitMth/core/Matrix.hpp>
-#include <BitMth/core/utils/Errors.hpp>
-
-// RANDOM
-#include <BitMth/random/MatrixRandom.hpp>
-
-// Activation
-#include <BitMth/math/Activations.hpp>
-
-// Loss
-#include <BitMth/math/Loss.hpp>
+#include <BitMth/linalg/Linalg.hpp>
+#include <BitMth/ia/IA.hpp>
+#include <BitMth/random/Random.hpp>

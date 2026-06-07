@@ -1,9 +1,9 @@
 #pragma once
 
-#include <BitMth/core/Matrix.hpp>
+#include <BitMth/linalg/Matrix.hpp>
 
 namespace BitMth{
-    namespace Math{
+    namespace ia{
         enum class LossFunct: unsigned char {
             MSE,
             BINARY_CROSS_ENTROPY
@@ -11,7 +11,7 @@ namespace BitMth{
         };
 
         template <typename T>
-        T mse(const Matrix<T>& predict, const Matrix<T>& real){
+        T mse(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real){
             CHECK_ERROR_MATRIX(
                 predict.rows != real.rows || predict.cols != real.cols,
                 "Loss function (MSE)",
@@ -21,19 +21,19 @@ namespace BitMth{
         }
 
         template <typename T>
-        Matrix<T> mseDerivative(const Matrix<T>& predict, const Matrix<T>& real){
+        linalg::Matrix<T> mseDerivative(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real){
             return predict - real;
         }
 
         template <typename T>
-        T bce(const Matrix<T>& predict, const Matrix<T>& real) {
+        T bce(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real) {
             CHECK_ERROR_MATRIX(
                 predict.rows != real.rows || predict.cols != real.cols,
                 "Loss function (BCE)",
                 "Matrix dimensions must match (rows == rows && cols == cols)"
             );
 
-            Matrix<T> lossMatrix(predict.rows, predict.cols);
+            linalg::Matrix<T> lossMatrix(predict.rows, predict.cols);
             T epsilon = T(1e-7);
 
             for (size_t i = 0; i < predict.numElements; i++) {
@@ -45,7 +45,7 @@ namespace BitMth{
         }
 
         template <typename T>
-        Matrix<T> bceDerivative(const Matrix<T>& predict, const Matrix<T>& real) {
+        linalg::Matrix<T> bceDerivative(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real) {
             CHECK_ERROR_MATRIX(
                 predict.rows != real.rows || predict.cols != real.cols,
                 "Loss function (BCE derivative)",
@@ -53,7 +53,7 @@ namespace BitMth{
             );
             T epsilon = static_cast<T>(1e-7);
 
-            Matrix<T> denominator = (T(1.0) - predict).hadamard(predict);
+            linalg::Matrix<T> denominator = (T(1.0) - predict).hadamard(predict);
             return (predict - real) / (denominator + epsilon) ;
         }
 
