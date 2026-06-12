@@ -5,19 +5,20 @@
 #include <cmath>
 
 #include <BitMth/utils/Errors.hpp>
+#include <BitMth/utils/Constants.hpp>
 
 namespace BitMth{
     namespace linalg{
         template <typename T>
         struct Matrix{
-            size_t rows, cols;
-            size_t numElements;
-            T *m;
+            size_t rows{0}, cols{0};
+            size_t numElements{0};
+            T *m{nullptr};
 
             Matrix(size_t rows, size_t cols):
                 rows(rows), cols(cols), numElements(rows * cols), m(new T[numElements]) { clear(); }
 
-            Matrix() : rows(0), cols(0), numElements(0), m(nullptr) {}
+            Matrix() = default;
             
             ~Matrix(){ delete[] m; }
             
@@ -38,11 +39,10 @@ namespace BitMth{
             Matrix& operator=(const Matrix& inMatrix){
                 if(this == &inMatrix) return *this;
 
-                if(inMatrix.numElements != numElements){
+                if(rows != inMatrix.rows || cols != inMatrix.cols){
                     delete[] m;
                     m = new T[inMatrix.numElements];
                 }
-
                 rows = inMatrix.rows;
                 cols = inMatrix.cols;
                 numElements = inMatrix.numElements;
@@ -180,10 +180,10 @@ namespace BitMth{
 
                 for (size_t i = 0; i < rows; i++) {
                     for (size_t k = 0; k < cols; k++) {
-                        T factor = (*this)(i, k); 
+                        T factor = m[i * cols + k]; 
                         
                         for (size_t j = 0; j < matrix.cols; j++) {
-                            result(i, j) += factor * matrix(k, j); 
+                            result.m[i * matrix.cols + j] += factor * matrix.m[k * matrix.cols + j]; 
                         }
                     }
                 }
@@ -191,43 +191,29 @@ namespace BitMth{
             }
 
             Matrix<T>& operator*=(const Matrix<T>& matrix) {
-                CHECK_ERROR_MATRIX(
-                    cols != matrix.rows,
-                    "matrix multiplication (*=)",
-                    "Matrix dimensions must match rows = cols"
-                );
-
-                Matrix<T> result(rows, matrix.cols);
-
-                for (size_t i = 0; i < rows; i++) {
-                    for (size_t k = 0; k < cols; k++) {
-                        T factor = (*this)(i, k); 
-                        
-                        for (size_t j = 0; j < matrix.cols; j++) {
-                            result(i, j) += factor * matrix(k, j); 
-                        }
-                    }
-                }
-
-                (*this) = result;
+                *this = *this * matrix;
                 return *this;
             }
 
             Matrix<T> t() const {
                 Matrix<T> result(cols, rows);
                 for (size_t i = 0; i < rows; i++) {
-                    for (size_t j = 0; j < cols; j++) result(j,i) = (*this)(i,j);
+                    for (size_t j = 0; j < cols; j++) result.m[j * rows + i] = m[i * cols + j];
                 }
                 return result;
             }
 
             Matrix<T>& powInPlace(T exponent) {
+                if (exponent == T(2)) {
+                    for (size_t i = 0; i < numElements; i++) m[i] = m[i] * m[i];
+                    return *this;
+                }
                 for (size_t i = 0; i < numElements; i++) m[i] = std::pow(m[i], exponent);
                 return *this;
             }
             Matrix<T> pow(T exponent) const {
                 Matrix<T> result(*this);
-                for (size_t i = 0; i < numElements; i++) result.m[i] = std::pow(result.m[i], exponent);
+                result.powInPlace(exponent);
                 return result;
             }
 
@@ -249,7 +235,11 @@ namespace BitMth{
                 );
                 Matrix<T> result(*this);
                 for (size_t i = 0; i < numElements; i++) {
-                    result.m[i] /= other.m[i];
+                    if (std::abs(other.m[i]) > Utils::EPSILON<T>) {
+                        result.m[i] = m[i] / other.m[i];
+                        continue;
+                    } 
+                    result.m[i] = T(0); 
                 }
                 return result;
             }

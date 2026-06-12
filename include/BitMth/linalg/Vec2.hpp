@@ -4,6 +4,7 @@
 #include <cmath>
 
 #include <BitMth/utils/Errors.hpp>
+#include <BitMth/utils/Constants.hpp>
 
 namespace BitMth{
     namespace linalg{
@@ -97,7 +98,7 @@ namespace BitMth{
 
             Vec2<T>& normalizeInPlance(){
                 T mag = magnitude();
-                if (mag > T(0)) {
+                if (mag > Utils::EPSILON<T>) {
                     *this /= mag;
                     return *this;
                 } 
@@ -106,7 +107,7 @@ namespace BitMth{
             }
             Vec2<T> normalize() const {
                 T mag = magnitude();
-                if (mag > T(0)) return *this / mag; 
+                if (mag > Utils::EPSILON<T>) return *this / mag; 
                 return Vec2<T>(T(0), T(0));
             }
 
