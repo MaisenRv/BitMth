@@ -110,6 +110,20 @@ namespace BitMth{
                 return Vec2<T>(T(0), T(0));
             }
 
+            T angleTo(const Vec2<T>& vector) const {
+                T dx = vector.x - x;
+                T dy = vector.y - y;
+                return std::atan2(dy, dx);
+            }
+
+            T angleBetween(const Vec2<T>& vector) const {
+                return std::atan2(cross(vector), dot(vector));
+            }
+
+            Vec2<T> midpoint(const Vec2<T>& vector) const {
+                return (*this + vector) * T(0.5);
+            }
+
             // Utils
             void clear(){ x = T(0); y = T(0); }
             void print() const { std::cout << "\tX: " << x << "\tY: " << y << std::endl; }
