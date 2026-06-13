@@ -88,12 +88,12 @@ namespace BitMth::linalg{
         }
         
         // Operators Matrix - number ---------------------------
-        Matrix<T> operator+(T number) const {
+        [[nodiscard]] Matrix<T> operator+(T number) const {
             Matrix<T> result(*this);
             for (size_t i = 0; i < numElements; i++) result.m[i] += number;
             return result;
         }
-        friend Matrix<T> operator+(T scalar, const Matrix<T>& matrix) {
+        [[nodiscard]] friend Matrix<T> operator+(T scalar, const Matrix<T>& matrix) {
             return matrix + scalar;
         }
         Matrix& operator+=(T number) {
@@ -101,12 +101,12 @@ namespace BitMth::linalg{
             return *this;
         }
 
-        Matrix<T> operator-(T number) const {
+        [[nodiscard]] Matrix<T> operator-(T number) const {
             Matrix<T> result(*this);
             for (size_t i = 0; i < numElements; i++) result.m[i] -= number;
             return result;
         }
-        friend Matrix<T> operator-(T scalar, const Matrix<T>& matrix) {
+        [[nodiscard]] friend Matrix<T> operator-(T scalar, const Matrix<T>& matrix) {
             return matrix - scalar;
         }
         Matrix& operator-=(T number) {
@@ -114,12 +114,12 @@ namespace BitMth::linalg{
             return *this;
         }
 
-        Matrix<T> operator*(T number) const {
+        [[nodiscard]] Matrix<T> operator*(T number) const {
             Matrix<T> result(*this);
             for (size_t i = 0; i < numElements; i++) result.m[i] *= number;
             return result;
         }
-        friend Matrix<T> operator*(T scalar, const Matrix<T>& matrix) {
+        [[nodiscard]] friend Matrix<T> operator*(T scalar, const Matrix<T>& matrix) {
             return matrix * scalar;
         }
         Matrix& operator*=(T number) {
@@ -128,7 +128,7 @@ namespace BitMth::linalg{
         }
 
         // Operators Matrix - Matrix ---------------------------
-        Matrix<T> operator+(const Matrix<T>& matrix) const {
+        [[nodiscard]] Matrix<T> operator+(const Matrix<T>& matrix) const {
             CHECK_ERROR_MATRIX(
                 rows != matrix.rows || cols != matrix.cols,
                 "matrix add (+)",
@@ -148,7 +148,7 @@ namespace BitMth::linalg{
             return *this;
         }
 
-        Matrix<T> operator-(const Matrix<T>& matrix) const {
+        [[nodiscard]] Matrix<T> operator-(const Matrix<T>& matrix) const {
             CHECK_ERROR_MATRIX(
                 rows != matrix.rows || cols != matrix.cols,
                 "matrix subtract (-)",
@@ -168,7 +168,7 @@ namespace BitMth::linalg{
             return *this;
         }
 
-        Matrix<T> operator*(const Matrix<T>& matrix) const {
+        [[nodiscard]] Matrix<T> operator*(const Matrix<T>& matrix) const {
             CHECK_ERROR_MATRIX(
                 cols != matrix.rows,
                 "matrix multiplication (*)",
@@ -194,7 +194,7 @@ namespace BitMth::linalg{
             return *this;
         }
 
-        Matrix<T> t() const {
+        [[nodiscard]] Matrix<T> t() const {
             Matrix<T> result(cols, rows);
             for (size_t i = 0; i < rows; i++) {
                 for (size_t j = 0; j < cols; j++) result.m[j * rows + i] = m[i * cols + j];
@@ -210,7 +210,7 @@ namespace BitMth::linalg{
             for (size_t i = 0; i < numElements; i++) m[i] = std::pow(m[i], exponent);
             return *this;
         }
-        Matrix<T> pow(T exponent) const {
+        [[nodiscard]] Matrix<T> pow(T exponent) const {
             Matrix<T> result(*this);
             result.powInPlace(exponent);
             return result;
@@ -226,7 +226,7 @@ namespace BitMth::linalg{
             return *this;
         }
 
-        Matrix<T> operator/(const Matrix<T>& other) const {
+        [[nodiscard]] Matrix<T> operator/(const Matrix<T>& other) const {
             CHECK_ERROR_MATRIX(
                 rows != other.rows || cols != other.cols,
                 "Matrix operator/",
@@ -243,7 +243,7 @@ namespace BitMth::linalg{
             return result;
         }
 
-        Matrix<T> reduceSumCols() const{
+        [[nodiscard]] Matrix<T> reduceSumCols() const{
             Matrix<T> result(rows, 1);
             for (size_t i = 0; i < rows; i++){
                 for (size_t j = 0; j < cols; j++){
@@ -253,7 +253,7 @@ namespace BitMth::linalg{
             return result;
         }
 
-        Matrix<T> reduceSumRows() const{
+        [[nodiscard]] Matrix<T> reduceSumRows() const{
             Matrix<T> result(1, cols);
             for (size_t i = 0; i < rows; i++){
                 for (size_t j = 0; j < cols; j++){
@@ -263,14 +263,14 @@ namespace BitMth::linalg{
             return result;
         }
 
-        T reduceSumTotal() const {
+        [[nodiscard]] T reduceSumTotal() const {
             T result = 0;
             for (size_t i = 0; i < numElements; i++) result += m[i];
             return result;
         }
 
 
-        Matrix<T> addRowVector(const Matrix<T>& rowVector) const {
+        [[nodiscard]] Matrix<T> addRowVector(const Matrix<T>& rowVector) const {
             CHECK_ERROR_MATRIX(
                 rowVector.rows != 1 || rowVector.cols != cols,
                 "Matrix operator (addRowVector)",

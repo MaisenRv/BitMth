@@ -14,7 +14,7 @@ namespace BitMth::ia{
     };
 
     template <typename T>
-    linalg::Matrix<T> relu(const linalg::Matrix<T>& matrixZ){
+    [[nodiscard]] linalg::Matrix<T> relu(const linalg::Matrix<T>& matrixZ){
         linalg::Matrix<T> result(matrixZ.rows, matrixZ.cols);
         for (size_t i = 0; i < matrixZ.numElements; i++) {
             result.m[i] = std::max( T(0.0), matrixZ.m[i]);
@@ -23,7 +23,7 @@ namespace BitMth::ia{
     };
 
     template <typename T>
-    linalg::Matrix<T> reluDerivative(const linalg::Matrix<T>& matrixZ, const linalg::Matrix<T>& matrixA){
+    [[nodiscard]] linalg::Matrix<T> reluDerivative(const linalg::Matrix<T>& matrixZ, const linalg::Matrix<T>& matrixA){
         linalg::Matrix<T> result(matrixZ.rows, matrixZ.cols);
         for (size_t i = 0; i < matrixZ.numElements; i++) {
             result.m[i] = matrixZ.m[i] > T(0.0) ? T(1.0) : T(0.0);
@@ -32,7 +32,7 @@ namespace BitMth::ia{
     };
 
     template <typename T>
-    linalg::Matrix<T> sigmoid(const linalg::Matrix<T>& matrixZ){
+    [[nodiscard]] linalg::Matrix<T> sigmoid(const linalg::Matrix<T>& matrixZ){
         linalg::Matrix<T> result(matrixZ.rows, matrixZ.cols);
         for (size_t i = 0; i < matrixZ.numElements; i++) {
             result.m[i] = T(1.0) / ( T(1.0) + std::exp(-matrixZ.m[i]) );
@@ -41,7 +41,7 @@ namespace BitMth::ia{
     };
 
     template <typename T>
-    linalg::Matrix<T> sigmoidDerivative(const linalg::Matrix<T>& matrixZ, const linalg::Matrix<T>& matrixA){
+    [[nodiscard]] linalg::Matrix<T> sigmoidDerivative(const linalg::Matrix<T>& matrixZ, const linalg::Matrix<T>& matrixA){
         linalg::Matrix<T> result(matrixA.rows, matrixA.cols);
         for (size_t i = 0; i < matrixA.numElements; i++) {
             result.m[i] = matrixA.m[i] * ( T(1.0) - matrixA.m[i] );
@@ -50,7 +50,7 @@ namespace BitMth::ia{
     };
 
     template <typename T>
-    linalg::Matrix<T> Tanh(const linalg::Matrix<T>& matrixZ){
+    [[nodiscard]] linalg::Matrix<T> Tanh(const linalg::Matrix<T>& matrixZ){
         linalg::Matrix<T> result(matrixZ.rows, matrixZ.cols);
         for (size_t i = 0; i < matrixZ.numElements; i++) {
             result.m[i] = std::tanh(matrixZ.m[i]);
@@ -59,7 +59,7 @@ namespace BitMth::ia{
     };
 
     template <typename T>
-    linalg::Matrix<T> TanhDerivative(const linalg::Matrix<T>& matrixZ, const linalg::Matrix<T>& matrixA){
+    [[nodiscard]] linalg::Matrix<T> TanhDerivative(const linalg::Matrix<T>& matrixZ, const linalg::Matrix<T>& matrixA){
         linalg::Matrix<T> result(matrixA.rows, matrixA.cols);
         for (size_t i = 0; i < matrixA.numElements; i++) {
             result.m[i] = T(1.0) - (matrixA.m[i] * matrixA.m[i]);
@@ -68,7 +68,7 @@ namespace BitMth::ia{
     };
 
     template <typename T>
-    linalg::Matrix<T> softmax(const linalg::Matrix<T>& matrixZ){
+    [[nodiscard]] linalg::Matrix<T> softmax(const linalg::Matrix<T>& matrixZ){
         linalg::Matrix<T> result(matrixZ.rows, matrixZ.cols);
         for (size_t r = 0; r < matrixZ.rows; r++) {
             size_t rowOffset = r * matrixZ.cols;

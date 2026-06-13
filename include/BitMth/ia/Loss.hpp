@@ -11,7 +11,7 @@ namespace BitMth::ia{
     };
 
     template <typename T>
-    T mse(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real){
+    [[nodiscard]] T mse(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real){
         CHECK_ERROR_MATRIX(
             predict.rows != real.rows || predict.cols != real.cols,
             "Loss function (MSE)",
@@ -21,12 +21,12 @@ namespace BitMth::ia{
     }
 
     template <typename T>
-    linalg::Matrix<T> mseDerivative(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real){
+    [[nodiscard]] linalg::Matrix<T> mseDerivative(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real){
         return predict - real;
     }
 
     template <typename T>
-    T bce(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real) {
+    [[nodiscard]] T bce(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real) {
         CHECK_ERROR_MATRIX(
             predict.rows != real.rows || predict.cols != real.cols,
             "Loss function (BCE)",
@@ -44,7 +44,7 @@ namespace BitMth::ia{
     }
 
     template <typename T>
-    linalg::Matrix<T> bceDerivative(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real) {
+    [[nodiscard]] linalg::Matrix<T> bceDerivative(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real) {
         CHECK_ERROR_MATRIX(
             predict.rows != real.rows || predict.cols != real.cols,
             "Loss function (BCE derivative)",
