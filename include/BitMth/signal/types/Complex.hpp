@@ -1,6 +1,7 @@
 #pragma once
 
 #include <iostream>
+#include <cmath>
 
 #include <BitMth/utils/Errors.hpp>
 
@@ -129,6 +130,14 @@ namespace BitMth::signal::types{
 
         [[nodiscard]] bool operator==(const Complex<T>& complex) const = default;
 
+        [[nodiscard]] constexpr T magnitude_sq() const noexcept { return re * re + im * im; }
+        [[nodiscard]] T magnitude() const { return std::sqrt(magnitude_sq()); }
+
+        [[nodiscard]] T phase() const { return std::atan2(im, re); }
+
+        [[nodiscard]] static constexpr Complex<T> fromPolar(T magnitude, T angle) noexcept {
+            return Complex<T>(magnitude * std::cos(angle), magnitude * std::sin(angle));
+        }
         // Utils
         void clear(){ re = T(0); im = T(0);}
         void print() const { std::cout << "\t" << re << " " << im << "i" << std::endl; }
