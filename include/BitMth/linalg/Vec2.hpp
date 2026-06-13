@@ -19,6 +19,7 @@ namespace BitMth::linalg{
         Vec2( Vec2&& vector) noexcept = default;
         Vec2& operator=( const Vec2& vector) = default;
         Vec2& operator=( Vec2&& vector) noexcept = default;
+        ~Vec2() = default;
 
         // Operators Vector - number
         Vec2<T> operator+(T number) const { return  Vec2<T>(x + number, y + number); }
@@ -46,12 +47,12 @@ namespace BitMth::linalg{
         }
 
         Vec2<T> operator/(T number){ 
-            CHECK_ERROR_VECTOR( number == 0, "Vector division (/)", "Division for zero", "2d");
+            CHECK_ERROR_VECTOR( number == T(0), "Vector division (/)", "Division for zero", "2d");
             T inv = T(1) / number;
             return  Vec2<T>(x * inv, y * inv);
         }
         Vec2<T>& operator/=(T number) { 
-            CHECK_ERROR_VECTOR( number == 0, "Vector division (/)", "Division for zero", "2d");
+            CHECK_ERROR_VECTOR( number == T(0), "Vector division (/)", "Division for zero", "2d");
             T inv = T(1) / number;
             x *= inv;
             y *= inv;
