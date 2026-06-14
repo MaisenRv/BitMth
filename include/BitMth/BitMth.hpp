@@ -4,3 +4,4 @@
 #include <BitMth/ia/IA.hpp>
 #include <BitMth/random/Random.hpp>
 #include <BitMth/signal/Signal.hpp>
+#include <BitMth/geometry/Geometry.hpp>
