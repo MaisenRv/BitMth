@@ -1,5 +1,6 @@
 #pragma once
 
+#include <BitMth/core/Core.hpp>
 #include <BitMth/linalg/Linalg.hpp>
 #include <BitMth/ia/IA.hpp>
 #include <BitMth/random/Random.hpp>
