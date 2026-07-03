@@ -51,7 +51,7 @@ namespace BitMth::ia{
             "Matrix dimensions must match (rows == rows && cols == cols)"
         );
         
-        linalg::Matrix<T> denominator = (T(1.0) - predict).hadamard(predict);
+        linalg::Matrix<T> denominator = (T(1.0) - predict).hadamardInPlace(predict);
         return (predict - real) / (denominator + utils::EPSILON<T>) ;
     }
 }
