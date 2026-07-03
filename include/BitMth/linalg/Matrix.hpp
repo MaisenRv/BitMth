@@ -362,17 +362,20 @@ namespace BitMth::linalg{
             );
 
             Matrix<T> result(rows, matrix.cols);
-            const size_t lhsRowJump = stride[0] / sizeof(T);
-            const size_t rhsRowJump = matrix.stride[0] / sizeof(T);
+            const size_t lhsRowStride = stride[0] / sizeof(T);
+            const size_t lhsColStride = stride[1] / sizeof(T);
+            const size_t rhsRowStride = matrix.stride[0] / sizeof(T);
 
             for (size_t i = 0; i < rows; ++i) {
                 T* const resRow = &result.m[i * matrix.cols];
 
                 for (size_t k = 0; k < cols; ++k) {
-                    const T factor = m[i * lhsRowJump + k];
-                    const T* const rhsRow = &matrix.m[k * rhsRowJump];
+                    const T factor = m[i * lhsRowStride + k * lhsColStride];
+                    const T* const rhsRow = &matrix.m[k * rhsRowStride];
 
-                    for (size_t j = 0; j < matrix.cols; ++j) resRow[j] += factor * rhsRow[j];
+                    for (size_t j = 0; j < matrix.cols; ++j) {
+                        resRow[j] += factor * rhsRow[j];
+                    }
                 }
             }
             return result;
@@ -383,21 +386,41 @@ namespace BitMth::linalg{
                 "matrix::mul",
                 "Matrix dimensions must match rows = cols"
             );
+
             Matrix<T> result(matrixA.rows, matrixB.cols, targetArena);
-            const size_t lhsRowJump = matrixA.stride[0] / sizeof(T);
-            const size_t rhsRowJump = matrixB.stride[0] / sizeof(T);
+            const size_t aRowStride = matrixA.stride[0] / sizeof(T);
+            const size_t aColStride = matrixA.stride[1] / sizeof(T);
+            const size_t bRowStride = matrixB.stride[0] / sizeof(T);
 
             for (size_t i = 0; i < matrixA.rows; ++i) {
                 T* const resRow = &result.m[i * matrixB.cols];
 
                 for (size_t k = 0; k < matrixA.cols; ++k) {
-                    const T factor = matrixA.m[i * lhsRowJump + k];
-                    const T* const rhsRow = &matrixB.m[k * rhsRowJump];
+                    const T factor = matrixA.m[i * aRowStride + k * aColStride];
+                    const T* const rhsRow = &matrixB.m[k * bRowStride];
 
-                    for (size_t j = 0; j < matrixB.cols; ++j) resRow[j] += factor * rhsRow[j];
+                    for (size_t j = 0; j < matrixB.cols; ++j) {
+                        resRow[j] += factor * rhsRow[j];
+                    }
                 }
             }
             return result;
+
+            // Matrix<T> result(matrixA.rows, matrixB.cols, targetArena);
+            // const size_t lhsRowJump = matrixA.stride[0] / sizeof(T);
+            // const size_t rhsRowJump = matrixB.stride[0] / sizeof(T);
+
+            // for (size_t i = 0; i < matrixA.rows; ++i) {
+            //     T* const resRow = &result.m[i * matrixB.cols];
+
+            //     for (size_t k = 0; k < matrixA.cols; ++k) {
+            //         const T factor = matrixA.m[i * lhsRowJump + k];
+            //         const T* const rhsRow = &matrixB.m[k * rhsRowJump];
+
+            //         for (size_t j = 0; j < matrixB.cols; ++j) resRow[j] += factor * rhsRow[j];
+            //     }
+            // }
+            // return result;
         }
         Matrix& hadamardInPlace(const Matrix<T>& matrix){
             CHECK_ERROR_MATRIX(
