@@ -14,7 +14,23 @@ target_include_directories(BitMth INTERFACE
 target_compile_options(BitMth INTERFACE -O3 -ffast-math)
 
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-    message(STATUS "Modo desarrollo: Compilando ejemplos de BitMth")
+    message(STATUS "Modo desarrollo: Activado")
+    
+    include(FetchContent)
+    FetchContent_Declare(
+        BitTest
+        GIT_REPOSITORY https://github.com/MaisenRv/BitTest.git
+        GIT_TAG        main
+    )
+
+    FetchContent_MakeAvailable(BitTest)
+
+    message(STATUS "Compilando ejemplos de BitMth")
     add_executable(ejemplo_bitmth examples/main.cpp)
     target_link_libraries(ejemplo_bitmth PRIVATE BitMth)
+
+    message(STATUS "Compilando pruebas de BitMth usando BitTest")
+    file(GLOB SOURCES_TESTS "tests/*.cpp")
+    add_executable(run_math_tests ${SOURCES_TESTS})
+    target_link_libraries(run_math_tests PRIVATE BitMth BitTest)
 endif()

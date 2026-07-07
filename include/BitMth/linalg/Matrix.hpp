@@ -14,7 +14,7 @@
 
 namespace BitMth::linalg{
     template <typename T>
-    struct Matrix{
+    class Matrix{
     private:
         Matrix(size_t rows, size_t cols, const size_t *customStrides, core::Arena* arena): Matrix(rows, cols, arena, false){
             stride[0] = customStrides[0];
@@ -39,13 +39,11 @@ namespace BitMth::linalg{
             return result;
         }
 
-    public:
         size_t rows{0}, cols{0}, numElements{0};
         size_t stride[2]{};
         T *m{nullptr};
         core::Arena *arena{nullptr};
-
-
+    public:
         Matrix(size_t rows, size_t cols, core::Arena *arenaContainer = nullptr, bool initializeData = true)
             :rows(rows), cols(cols), numElements(rows * cols), arena(arenaContainer){
             if (arena != nullptr){
@@ -113,11 +111,9 @@ namespace BitMth::linalg{
             if(rows != inMatrix.rows || cols != inMatrix.cols){
                 if(arena == nullptr){
                     delete[] m;
-                    m = new T[inMatrix.numElements];
-                }else{
-                    void *ptrData = arena->alloc(inMatrix.numElements * sizeof(T), alignof(T));
-                    m = reinterpret_cast<T*>(ptrData);
                 }
+                arena = nullptr;
+                m = new T[inMatrix.numElements];
                 
                 rows = inMatrix.rows;
                 cols = inMatrix.cols;
@@ -405,22 +401,6 @@ namespace BitMth::linalg{
                 }
             }
             return result;
-
-            // Matrix<T> result(matrixA.rows, matrixB.cols, targetArena);
-            // const size_t lhsRowJump = matrixA.stride[0] / sizeof(T);
-            // const size_t rhsRowJump = matrixB.stride[0] / sizeof(T);
-
-            // for (size_t i = 0; i < matrixA.rows; ++i) {
-            //     T* const resRow = &result.m[i * matrixB.cols];
-
-            //     for (size_t k = 0; k < matrixA.cols; ++k) {
-            //         const T factor = matrixA.m[i * lhsRowJump + k];
-            //         const T* const rhsRow = &matrixB.m[k * rhsRowJump];
-
-            //         for (size_t j = 0; j < matrixB.cols; ++j) resRow[j] += factor * rhsRow[j];
-            //     }
-            // }
-            // return result;
         }
         Matrix& hadamardInPlace(const Matrix<T>& matrix){
             CHECK_ERROR_MATRIX(
@@ -525,6 +505,14 @@ namespace BitMth::linalg{
             }
             return result;
         }
+
+        // GETTERS - SETTERS
+        inline size_t             getRows()     const noexcept { return rows; }
+        inline size_t             getCols()     const noexcept { return cols; }
+        inline const size_t*      getStrides()  const noexcept { return stride; }
+        inline const core::Arena* getArena()    const noexcept { return arena; }
+        inline const T*           getValues()   const noexcept { return m; }
+        inline size_t             size()        const noexcept { return numElements; }
 
         // Utils
         void clear(){ std::fill_n(m, numElements, T(0)); }
