@@ -452,6 +452,34 @@ namespace BitMth::linalg{
             });
         }
 
+        [[nodiscard]] bool operator==(const Matrix<T>& matrix) const {
+            if(rows != matrix.getRows() || 
+               matrix.getCols() != cols || 
+               matrix.size() != numElements ||
+               matrix.getStrides()[0] != stride[0] ||
+               matrix.getStrides()[1] != stride[1]
+            ){ return false; }
+
+            for (size_t i = 0; i < rows; i++){
+                for (size_t j = 0; j < cols; j++){
+                    if((*this)(i,j) != matrix(i,j)) return false;
+                }
+            }
+            return true;
+        }
+
+        [[nodiscard]] bool isApprox(const Matrix<T>& matrix) const {
+            if (rows != matrix.rows || cols != matrix.cols) return false;
+            for (size_t i = 0; i < rows; i++) {
+                for (size_t j = 0; j < cols; j++) {
+                    T diff = (*this)(i, j) - matrix(i, j);
+                    if (diff < 0) diff = -diff;
+                    if (diff > utils::EPSILON<T>) return false;
+                }
+            }
+            return true;
+        }
+
         [[nodiscard]] Matrix<T> reduceSumCols() const{
             Matrix<T> result(rows, 1);
             const size_t rowJump = stride[0] / sizeof(T);
@@ -506,18 +534,32 @@ namespace BitMth::linalg{
             return result;
         }
 
-        // GETTERS - SETTERS
-        inline size_t             getRows()     const noexcept { return rows; }
-        inline size_t             getCols()     const noexcept { return cols; }
-        inline const size_t*      getStrides()  const noexcept { return stride; }
-        inline const core::Arena* getArena()    const noexcept { return arena; }
-        inline const T*           getValues()   const noexcept { return m; }
-        inline size_t             size()        const noexcept { return numElements; }
-
         // Utils
         void clear(){ std::fill_n(m, numElements, T(0)); }
         void setOne(){ std::fill_n(m, numElements, T(1)); }
         
+        friend std::ostream& operator<<(std::ostream& os, const Matrix<T>& matrix) {
+            std::ios_base::fmtflags f(os.flags());
+            const int precision = 4;
+            const int width = 8;
+
+            os << "\n  Matrix [" << matrix.rows << "x" << matrix.cols << "]\n";
+            os << "  ┌" << std::string(matrix.cols * (width + 1) + 1, ' ') << "┐\n";
+
+            for (size_t i = 0; i < matrix.rows; i++) {
+                os << "  │ ";
+                for (size_t j = 0; j < matrix.cols; j++) {
+                    os << std::fixed << std::setprecision(precision) << std::setw(width) << matrix(i, j);
+                    if (j < matrix.cols - 1) { os << " "; }
+                }
+                os << " │\n";
+            }
+
+            os << "  └" << std::string(matrix.cols * (width + 1) + 1, ' ') << "┘\n";
+            os.flags(f); 
+            return os;
+        }
+
         void print(int precision = 4, int width = 8) const {
             std::ios_base::fmtflags f(std::cout.flags());
             
@@ -537,5 +579,13 @@ namespace BitMth::linalg{
             std::cout << "  └" << std::string(cols * (width + 1) + 1, ' ') << "┘\n\n";
             std::cout.flags(f); 
         }
+
+        // GETTERS - SETTERS
+        inline size_t             getRows()     const noexcept { return rows; }
+        inline size_t             getCols()     const noexcept { return cols; }
+        inline const size_t*      getStrides()  const noexcept { return stride; }
+        inline const core::Arena* getArena()    const noexcept { return arena; }
+        inline const T*           getValues()   const noexcept { return m; }
+        inline size_t             size()        const noexcept { return numElements; }
     };
 }
