@@ -3,6 +3,7 @@ Build/
 bin/
 lib/
 dist/
+.helix/
 
 CMakeCache.txt
 CMakeFiles/
@@ -11,6 +12,7 @@ Makefile
 cmake_install.cmake
 install_manifest.txt
 compile_commands.json
+compile_flags.txt
 
 *.o
 *.obj
