@@ -303,3 +303,18 @@ BIT_TEST_CASE(DivisionByZero){
     BIT_ASSERT_THROWS(m / 0);
     BIT_ASSERT_THROWS(BitMth::linalg::Matrix<float>::div(m,0,nullptr));
 }
+
+BIT_TEST_CASE(PowInPlace){
+    BitMth::linalg::Matrix<float> m(3,2,nullptr,true);
+    m.setWith(3);
+    m.powInPlace(2);
+    BitMth::linalg::Matrix<float> m2(3,2,nullptr,true);
+    m2.setWith(9);
+    BIT_ASSERT_TRUE(m.isApprox(m2));
+    m.powInPlace(1.5);
+    m2.setWith(27);
+    BIT_ASSERT_TRUE(m2.isApprox(m, 1e-5));
+    m.powInPlace(0);
+    m2.setOne();
+    BIT_ASSERT_EQ(m2,m);
+}
