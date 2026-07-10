@@ -12,13 +12,13 @@ namespace BitMth::random{
     template <typename T>
     void uniform(linalg::Matrix<T>& matrix, T min, T max){
         std::uniform_real_distribution<T> dist(min, max);
-        for (size_t i = 0; i < matrix.numElements; i++) matrix.m[i] = dist(gen);
+        for (size_t i = 0; i < matrix.size(); i++) matrix.getValues()[i] = dist(gen);
     }
 
     template <typename T>
     void normal(linalg::Matrix<T>& matrix, T mean, T stddev){
         std::normal_distribution<T> dist(mean, stddev);
-        for (size_t i = 0; i < matrix.numElements; i++) matrix.m[i] = dist(gen);
+        for (size_t i = 0; i < matrix.size(); i++) matrix.getValues()[i] = dist(gen);
     }
 
     template <typename T>
