@@ -4,6 +4,7 @@ bin/
 lib/
 dist/
 .helix/
+.cache/
 
 CMakeCache.txt
 CMakeFiles/

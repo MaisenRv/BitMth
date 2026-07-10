@@ -12,6 +12,7 @@ target_include_directories(BitMth INTERFACE
 )
 
 target_compile_options(BitMth INTERFACE -O3 -ffast-math)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     message(STATUS "Modo desarrollo: Activado")
