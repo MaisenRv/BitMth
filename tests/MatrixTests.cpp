@@ -35,6 +35,8 @@ BIT_TEST_CASE(MatrixInitializationZero){
     }
 }
 
+// COPY
+
 BIT_TEST_CASE(MatrixCopyConstructor){
     BitMth::linalg::Matrix<float> m(2,3,nullptr,true);
     m(1,2) = 78;
@@ -138,15 +140,166 @@ BIT_TEST_CASE(MatrixOperatorIndexing) {
     BIT_ASSERT(constMatrix(1, 1) == 40.5);
 }
 
+// INDEXING
+
 BIT_TEST_CASE(MatrixIndexingOutOfBounds) {
     BitMth::linalg::Matrix<double> m(2, 3, nullptr, true);
-    try { 
-        m(2, 0);
-        BIT_FAIL("Expected exception for out-of-bounds row index (2, 0) but none was thrown.");
-    } catch (...) { BIT_PASS();; }
+    BIT_ASSERT_THROWS(m(2, 0));
+    BIT_ASSERT_THROWS(m(0, 3));
+}
 
-    try {
-        m(0, 3);
-        BIT_FAIL("Expected exception for out-of-bounds column index (0, 3) but none was thrown.");
-    } catch (...) { BIT_PASS();}
+// OPERATORS MATRIX - SCALAR
+
+BIT_TEST_CASE(AdditionAssignmentOperator){
+    BitMth::linalg::Matrix<int> m(3,2,nullptr,true);
+    m.setWith(5);
+    m += 3;
+    BitMth::linalg::Matrix<int> m2(3,2,nullptr, true);
+    m2.setWith(8);
+    BIT_ASSERT_EQ(m2, m);
+}
+
+BIT_TEST_CASE(AdditionOperator){
+    BitMth::linalg::Matrix<int> m(3,2,nullptr,true);
+    m.setWith(5);
+    BitMth::linalg::Matrix<int> m2 = m + 3;
+    BitMth::linalg::Matrix<int> m3(3,2,nullptr,true);
+    m3.setWith(8);
+    BIT_ASSERT_EQ(m3, m2);
+    BIT_ASSERT_EQ(nullptr, m2.getArena());
+}
+
+BIT_TEST_CASE(AddStaticFunct){
+    BitMth::core::Arena arena(100);
+    BitMth::linalg::Matrix<int> m(3,2,nullptr,true);
+    m.setWith(5);
+    BitMth::linalg::Matrix<int> m2 = BitMth::linalg::Matrix<int>::add(m,3, &arena);
+    BitMth::linalg::Matrix<int> m3(3,2,nullptr,true);
+    m3.setWith(8);
+    BIT_ASSERT_EQ(m3, m2);
+    BIT_ASSERT_EQ(&arena, m2.getArena());
+    BIT_ASSERT_EQ(nullptr, m3.getArena());
+}
+
+BIT_TEST_CASE(SubtractionAssignmentOperator){
+    BitMth::linalg::Matrix<int> m(3,2,nullptr,true);
+    m.setWith(5);
+    m -= 3;
+    BitMth::linalg::Matrix<int> m2(3,2,nullptr, true);
+    m2.setWith(2);
+    BIT_ASSERT_EQ(m2, m);
+}
+
+BIT_TEST_CASE(SubtractionOperator){
+    BitMth::linalg::Matrix<int> m(3,2,nullptr,true);
+    m.setWith(5);
+    BitMth::linalg::Matrix<int> m2 = m - 3;
+    BitMth::linalg::Matrix<int> m3(3,2,nullptr,true);
+    m3.setWith(2);
+    BIT_ASSERT_EQ(m3, m2);
+    BIT_ASSERT_EQ(nullptr, m2.getArena());
+}
+
+BIT_TEST_CASE(SubtractionOperatorFriend){
+    BitMth::linalg::Matrix<int> m(3,2,nullptr,true);
+    m.setWith(5);
+    BitMth::linalg::Matrix<int> m2 = 3 - m;
+    BitMth::linalg::Matrix<int> m3(3,2,nullptr,true);
+    m3.setWith(-2);
+    BIT_ASSERT_EQ(m3, m2);
+    BIT_ASSERT_EQ(nullptr, m2.getArena());
+}
+
+BIT_TEST_CASE(SubStaticFunct1){
+    BitMth::core::Arena arena(100);
+    BitMth::linalg::Matrix<int> m(3,2,nullptr,true);
+    m.setWith(5);
+    BitMth::linalg::Matrix<int> m2 = BitMth::linalg::Matrix<int>::sub(m,3, &arena);
+    BitMth::linalg::Matrix<int> m3(3,2,nullptr,true);
+    m3.setWith(2);
+    BIT_ASSERT_EQ(m3, m2);
+    BIT_ASSERT_EQ(&arena, m2.getArena());
+    BIT_ASSERT_EQ(nullptr, m3.getArena());
+}
+
+BIT_TEST_CASE(SubStaticFunct2){
+    BitMth::core::Arena arena(100);
+    BitMth::linalg::Matrix<int> m(3,2,nullptr,true);
+    m.setWith(5);
+    BitMth::linalg::Matrix<int> m2 = BitMth::linalg::Matrix<int>::sub(3,m, &arena);
+    BitMth::linalg::Matrix<int> m3(3,2,nullptr,true);
+    m3.setWith(-2);
+    BIT_ASSERT_EQ(m3, m2);
+    BIT_ASSERT_EQ(&arena, m2.getArena());
+    BIT_ASSERT_EQ(nullptr, m3.getArena());
+}
+
+BIT_TEST_CASE(MultiplicationAssignmentOperator){
+    BitMth::linalg::Matrix<int> m(3,4,nullptr,true);
+    m.setWith(5);
+    m *= 3;
+    BitMth::linalg::Matrix<int> m2(3,4,nullptr, true);
+    m2.setWith(15);
+    BIT_ASSERT_EQ(m2, m);
+}
+
+BIT_TEST_CASE(MultiplicationOperator){
+    BitMth::linalg::Matrix<int> m(3,2,nullptr,true);
+    m.setWith(5);
+    BitMth::linalg::Matrix<int> m2 = m * 3;
+    BitMth::linalg::Matrix<int> m3(3,2,nullptr,true);
+    m3.setWith(15);
+    BIT_ASSERT_EQ(m3, m2);
+    BIT_ASSERT_EQ(nullptr, m2.getArena());
+}
+
+BIT_TEST_CASE(MulStaticFunct){
+    BitMth::core::Arena arena(100);
+    BitMth::linalg::Matrix<int> m(3,2,nullptr,true);
+    m.setWith(5);
+    BitMth::linalg::Matrix<int> m2 = BitMth::linalg::Matrix<int>::mul(m,3, &arena);
+    BitMth::linalg::Matrix<int> m3(3,2,nullptr,true);
+    m3.setWith(15);
+    BIT_ASSERT_EQ(m3, m2);
+    BIT_ASSERT_EQ(&arena, m2.getArena());
+    BIT_ASSERT_EQ(nullptr, m3.getArena());
+}
+
+BIT_TEST_CASE(DivisionAssignmentOperator){
+    BitMth::linalg::Matrix<float> m(3,4,nullptr,true);
+    m.setWith(15);
+    m /= 3;
+    BitMth::linalg::Matrix<float> m2(3,4,nullptr, true);
+    m2.setWith(5);
+    BIT_ASSERT_TRUE(m.isApprox(m2));
+}
+
+BIT_TEST_CASE(DivisionOperator){
+    BitMth::linalg::Matrix<float> m(3,2,nullptr,true);
+    m.setWith(15);
+    BitMth::linalg::Matrix<float> m2 = m / 3;
+    BitMth::linalg::Matrix<float> m3(3,2,nullptr,true);
+    m3.setWith(5);
+    BIT_ASSERT_TRUE(m2.isApprox(m3));
+    BIT_ASSERT_EQ(nullptr, m2.getArena());
+}
+
+BIT_TEST_CASE(divStaticFunct){
+    BitMth::core::Arena arena(100);
+    BitMth::linalg::Matrix<float> m(3,2,nullptr,true);
+    m.setWith(15);
+    BitMth::linalg::Matrix<float> m2 = BitMth::linalg::Matrix<float>::div(m,3, &arena);
+    BitMth::linalg::Matrix<float> m3(3,2,nullptr,true);
+    m3.setWith(5);
+    BIT_ASSERT_TRUE(m2.isApprox(m3));
+    BIT_ASSERT_EQ(&arena, m2.getArena());
+    BIT_ASSERT_EQ(nullptr, m3.getArena());
+}
+
+BIT_TEST_CASE(DivisionByZero){
+    BitMth::linalg::Matrix<float> m(3,4,nullptr,true);
+    m.setWith(15);
+    BIT_ASSERT_THROWS(m /= 0);
+    BIT_ASSERT_THROWS(m / 0);
+    BIT_ASSERT_THROWS(BitMth::linalg::Matrix<float>::div(m,0,nullptr));
 }
