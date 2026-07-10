@@ -537,7 +537,21 @@ namespace BitMth::linalg{
         // Utils
         void clear(){ std::fill_n(m, numElements, T(0)); }
         void setOne(){ std::fill_n(m, numElements, T(1)); }
-        
+        void setWith(T number){ std::fill_n(m, numElements, number); }
+        void setIdentity(){
+            CHECK_ERROR_MATRIX(
+                rows != cols,
+                "setIdentity",
+                "Matrix dimensions must match (rows == cols)"
+            );
+            clear();
+            const size_t rowJump = stride[0] / sizeof(T);
+            for(size_t i = 0; i < rows; i++){
+                T* const currentRow = &m[i * rowJump];
+                currentRow[i] = 1;
+            }
+        }
+
         friend std::ostream& operator<<(std::ostream& os, const Matrix<T>& matrix) {
             std::ios_base::fmtflags f(os.flags());
             const int precision = 4;
