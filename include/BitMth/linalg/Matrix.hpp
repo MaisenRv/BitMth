@@ -468,13 +468,13 @@ namespace BitMth::linalg{
             return true;
         }
 
-        [[nodiscard]] bool isApprox(const Matrix<T>& matrix) const {
+        [[nodiscard]] bool isApprox(const Matrix<T>& matrix, T margin = utils::EPSILON<T>) const {
             if (rows != matrix.rows || cols != matrix.cols) return false;
             for (size_t i = 0; i < rows; i++) {
                 for (size_t j = 0; j < cols; j++) {
                     T diff = (*this)(i, j) - matrix(i, j);
                     if (diff < 0) diff = -diff;
-                    if (diff > utils::EPSILON<T>) return false;
+                    if (diff > margin) return false;
                 }
             }
             return true;
@@ -600,6 +600,7 @@ namespace BitMth::linalg{
         inline const size_t*      getStrides()  const noexcept { return stride; }
         inline const core::Arena* getArena()    const noexcept { return arena; }
         inline const T*           getValues()   const noexcept { return m; }
+        inline T*                 getValues()   noexcept       { return m; }
         inline size_t             size()        const noexcept { return numElements; }
     };
 }
