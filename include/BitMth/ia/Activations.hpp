@@ -86,13 +86,13 @@ namespace BitMth::ia{
     };
 
     template<typename T>
-    inline std::unordered_map<ia::types::ActivationFunct, ia::types::activationsFunct<T>>& getActivationFunctions(){
-        static std::unordered_map<ia::types::ActivationFunct, ia::types::activationsFunct<T>> functTable ={
-            {ia::types::ActivationFunct::RELU,    {Activations<T>::relu, Activations<T>::reluDerivative}},
-            {ia::types::ActivationFunct::SIGMOID, {Activations<T>::sigmoid, Activations<T>::sigmoidDerivative}},
-            {ia::types::ActivationFunct::TANH,    {Activations<T>::Tanh, Activations<T>::TanhDerivative}},
-            {ia::types::ActivationFunct::SOFTMAX, {Activations<T>::softmax, nullptr}}
+    inline const ia::types::ActivationContent<T>& getActivationFunction(const ia::types::ActivationFunctType type){
+        static std::unordered_map<ia::types::ActivationFunctType, ia::types::ActivationContent<T>> functTable ={
+            {ia::types::ActivationFunctType::RELU,    {Activations<T>::relu, Activations<T>::reluDerivative}},
+            {ia::types::ActivationFunctType::SIGMOID, {Activations<T>::sigmoid, Activations<T>::sigmoidDerivative}},
+            {ia::types::ActivationFunctType::TANH,    {Activations<T>::Tanh, Activations<T>::TanhDerivative}},
+            {ia::types::ActivationFunctType::SOFTMAX, {Activations<T>::softmax, nullptr}}
         };
-        return functTable;
+        return functTable[type];
     }
 }
