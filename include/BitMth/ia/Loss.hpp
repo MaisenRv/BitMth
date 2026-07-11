@@ -1,12 +1,13 @@
 #pragma once
+#include <algorithm>
 
 #include <BitMth/linalg/Matrix.hpp>
 #include <BitMth/utils/Constants.hpp>
 
 namespace BitMth::ia{
     enum class LossFunct: unsigned char {
-        MSE,
-        BINARY_CROSS_ENTROPY
+        MSE
+        // BINARY_CROSS_ENTROPY
         // CATEGORICAL_CROSS_ENTROPY
     };
 
@@ -25,33 +26,33 @@ namespace BitMth::ia{
         return predict - real;
     }
 
-    template <typename T>
-    [[nodiscard]] T bce(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real) {
-        CHECK_ERROR_MATRIX(
-            predict.getRows() != real.getRows() || predict.getCols() != real.getCols(),
-            "Loss function (BCE)",
-            "Matrix dimensions must match (rows == rows && cols == cols)"
-        );
+    // template <typename T>
+    // [[nodiscard]] T bce(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real) {
+    //     CHECK_ERROR_MATRIX(
+    //         predict.getRows() != real.getRows() || predict.getCols() != real.getCols(),
+    //         "Loss function (BCE)",
+    //         "Matrix dimensions must match (rows == rows && cols == cols)"
+    //     );
 
-        linalg::Matrix<T> lossMatrix(predict.getRows(), predict.getCols());
+    //     linalg::Matrix<T> lossMatrix(predict.getRows(), predict.getCols());
 
-        for (size_t i = 0; i < predict.numElements; i++) {
-            T y_pred = std::clamp(predict.m[i], utils::EPSILON<T>, T(1.0) - utils::EPSILON<T>);
-            T y_real = real.m[i];
-            lossMatrix.m[i] = y_real * std::log(y_pred) + (T(1.0) - y_real) * std::log(T(1.0) - y_pred);
-        }
-        return -lossMatrix.reduceSumTotal() / static_cast<T>(real.size());
-    }
+    //     for (size_t i = 0; i < predict.size(); i++) {
+    //         T y_pred = std::clamp(predict.getValues()[i], utils::EPSILON<T>, T(1.0) - utils::EPSILON<T>);
+    //         T y_real = real.getValues()[i];
+    //         lossMatrix.getValues()[i] = y_real * std::log(y_pred) + (T(1.0) - y_real) * std::log(T(1.0) - y_pred);
+    //     }
+    //     return -lossMatrix.reduceSumTotal() / static_cast<T>(real.size());
+    // }
 
-    template <typename T>
-    [[nodiscard]] linalg::Matrix<T> bceDerivative(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real) {
-        CHECK_ERROR_MATRIX(
-            predict.getRows() != real.getRows() || predict.getCols() != real.getCols(),
-            "Loss function (BCE derivative)",
-            "Matrix dimensions must match (rows == rows && cols == cols)"
-        );
+    // template <typename T>
+    // [[nodiscard]] linalg::Matrix<T> bceDerivative(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real) {
+    //     CHECK_ERROR_MATRIX(
+    //         predict.getRows() != real.getRows() || predict.getCols() != real.getCols(),
+    //         "Loss function (BCE derivative)",
+    //         "Matrix dimensions must match (rows == rows && cols == cols)"
+    //     );
         
-        linalg::Matrix<T> denominator = (T(1.0) - predict).hadamardInPlace(predict);
-        return (predict - real) / (denominator + utils::EPSILON<T>) ;
-    }
+    //     linalg::Matrix<T> denominator = (T(1.0) - predict).hadamardInPlace(predict);
+    //     return (predict - real) / (denominator + utils::EPSILON<T>) ;
+    // }
 }
