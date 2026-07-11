@@ -13,11 +13,11 @@ namespace BitMth::ia{
     template <typename T>
     [[nodiscard]] T mse(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real){
         CHECK_ERROR_MATRIX(
-            predict.rows != real.rows || predict.cols != real.cols,
+            predict.getRows() != real.getRows() || predict.getCols() != real.getCols(),
             "Loss function (MSE)",
             "Matrix dimensions must match (rows = rows && cols == cols)"
         );
-        return (predict - real).pow(2).reduceSumTotal() / static_cast<T>(real.numElements);
+        return (predict - real).pow(2).reduceSumTotal() / static_cast<T>(real.size());
     }
 
     template <typename T>
@@ -28,25 +28,25 @@ namespace BitMth::ia{
     template <typename T>
     [[nodiscard]] T bce(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real) {
         CHECK_ERROR_MATRIX(
-            predict.rows != real.rows || predict.cols != real.cols,
+            predict.getRows() != real.getRows() || predict.getCols() != real.getCols(),
             "Loss function (BCE)",
             "Matrix dimensions must match (rows == rows && cols == cols)"
         );
 
-        linalg::Matrix<T> lossMatrix(predict.rows, predict.cols);
+        linalg::Matrix<T> lossMatrix(predict.getRows(), predict.getCols());
 
         for (size_t i = 0; i < predict.numElements; i++) {
             T y_pred = std::clamp(predict.m[i], utils::EPSILON<T>, T(1.0) - utils::EPSILON<T>);
             T y_real = real.m[i];
             lossMatrix.m[i] = y_real * std::log(y_pred) + (T(1.0) - y_real) * std::log(T(1.0) - y_pred);
         }
-        return -lossMatrix.reduceSumTotal() / static_cast<T>(real.numElements);
+        return -lossMatrix.reduceSumTotal() / static_cast<T>(real.size());
     }
 
     template <typename T>
     [[nodiscard]] linalg::Matrix<T> bceDerivative(const linalg::Matrix<T>& predict, const linalg::Matrix<T>& real) {
         CHECK_ERROR_MATRIX(
-            predict.rows != real.rows || predict.cols != real.cols,
+            predict.getRows() != real.getRows() || predict.getCols() != real.getCols(),
             "Loss function (BCE derivative)",
             "Matrix dimensions must match (rows == rows && cols == cols)"
         );
