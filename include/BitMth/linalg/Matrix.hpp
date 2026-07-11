@@ -408,7 +408,21 @@ namespace BitMth::linalg{
                 "matrix hadamard product ( (·) )",
                 "Matrix dimensions must match (rows = rows && cols == cols)"
             );
-            for (size_t i = 0; i < numElements; i++) m[i] *= matrix.m[i];
+            const size_t rowJumpThis = stride[0] / sizeof(T);
+            const size_t colJumpThis = stride[1] / sizeof(T);
+            
+            const size_t rowJumpOther = matrix.stride[0] / sizeof(T);
+            const size_t colJumpOther = matrix.stride[1] / sizeof(T);
+
+            for (size_t i = 0; i < rows; i++) {
+                T* const rowThis = &m[i * rowJumpThis];
+                const T* const rowOther = &matrix.m[i * rowJumpOther];
+
+                for (size_t j = 0; j < cols; j++) {
+                    rowThis[j * colJumpThis] *= rowOther[j * colJumpOther];
+                }
+            }
+            // for (size_t i = 0; i < numElements; i++) m[i] *= matrix.m[i];
             return *this;
         }
         [[nodiscard]] static Matrix<T> hadamard(const Matrix<T>& matrixA, const Matrix<T>& matrixB, core::Arena* targetArena){
