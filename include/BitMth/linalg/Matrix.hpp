@@ -81,23 +81,13 @@ namespace BitMth::linalg{
             rows(inMatrix.rows), cols(inMatrix.cols),numElements(inMatrix.numElements), m(new T[numElements]){
                 stride[0] = inMatrix.stride[0];
                 stride[1] = inMatrix.stride[1];
-                for (size_t i = 0; i < rows; i++){
-                    for (size_t j = 0; j < cols; j++){
-                        (*this)(i,j) = inMatrix(i,j); 
-                    }
-                }
+                arena = nullptr;
+                std::memcpy(m,inMatrix.m,numElements * sizeof(T));
             }
 
         [[nodiscard]] Matrix<T> clone(core::Arena *arenaContainer) const {
-            Matrix<T> copy(rows,cols,arenaContainer,false);
-            const size_t srcRowJump = stride[0] / sizeof(T);
-            if (srcRowJump == cols) {
-                std::memcpy(copy.m, m, numElements * sizeof(T));
-            } else {
-                for (size_t i = 0; i < rows; ++i) {
-                    std::memcpy(&copy.m[i * cols], &m[i * srcRowJump], cols * sizeof(T));
-                }
-            }
+            Matrix<T> copy(rows,cols,stride,arenaContainer);
+            std::memcpy(copy.m, m, numElements * sizeof(T));
             return copy;
         }
         
@@ -131,11 +121,7 @@ namespace BitMth::linalg{
             
             stride[0] = inMatrix.stride[0];
             stride[1] = inMatrix.stride[1];
-            for (size_t i = 0; i < rows; i++){
-                for (size_t j = 0; j < cols; j++){
-                    (*this)(i,j) = inMatrix(i,j); 
-                }
-            }
+            std::memcpy(m, inMatrix.m, numElements * sizeof(T));
             return *this;
         }
 
