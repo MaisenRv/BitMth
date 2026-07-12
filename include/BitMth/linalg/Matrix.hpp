@@ -14,7 +14,7 @@
 
 namespace BitMth::linalg{
     template <typename T>
-    class Matrix{
+    class [[nodiscard]] Matrix{
     private:
         Matrix(size_t rows, size_t cols, const size_t *customStrides, core::Arena* arena): Matrix(rows, cols, arena, false){
             stride[0] = customStrides[0];
@@ -22,7 +22,7 @@ namespace BitMth::linalg{
         }
 
         template< typename Op>
-        [[nodiscard]] static Matrix<T> _scalarApplyFunction(const Matrix<T> &matrix,T scalar, core::Arena *arenaContainer, Op funct){
+        static Matrix<T> _scalarApplyFunction(const Matrix<T> &matrix,T scalar, core::Arena *arenaContainer, Op funct){
             Matrix<T> result(matrix.rows, matrix.cols, arenaContainer, false);
             for (size_t i = 0; i < matrix.numElements; i++){
                 result.m[i] = funct(matrix.m[i], scalar);
@@ -30,8 +30,16 @@ namespace BitMth::linalg{
             return result;
         }
 
+        template<typename Op>
+        Matrix<T>& _scalarApplyFunctionInPlace(T scalar, Op funct) {
+            for (size_t i = 0; i < numElements; i++) {
+                funct(m[i], scalar);
+            }
+            return *this; 
+        }
+
         template< typename Op>
-        [[nodiscard]] static Matrix<T> _matrixApplyFunction(const Matrix<T> &matrixA, const Matrix<T> &matrixB, core::Arena *arenaContainer, Op funct){
+        static Matrix<T> _matrixApplyFunction(const Matrix<T> &matrixA, const Matrix<T> &matrixB, core::Arena *arenaContainer, Op funct){
             Matrix<T> result(matrixA.rows, matrixA.cols, arenaContainer, false);
             const size_t aJumpRow = matrixA.stride[0] / sizeof(T);
             const size_t aJumpCol = matrixA.stride[1] / sizeof(T);
@@ -46,6 +54,23 @@ namespace BitMth::linalg{
             }
 
             return result;
+        }
+
+        template< typename Op>
+        Matrix<T>& _matrixApplyFunctionInPlace(const Matrix<T>& matrix,Op funct) {
+            const size_t rowJumpThis = stride[0] / sizeof(T);
+            const size_t colJumpThis = stride[1] / sizeof(T);
+            const size_t rowJumpOther = matrix.stride[0] / sizeof(T);
+            const size_t colJumpOther = matrix.stride[1] / sizeof(T);
+
+            for (size_t i = 0; i < rows; i++) {
+                T* const rowThis = &m[i * rowJumpThis];
+                const T* const rowOther = &matrix.m[i * rowJumpOther];
+                for (size_t j = 0; j < cols; j++) {
+                    funct(rowThis[j * colJumpThis], rowOther[j * colJumpOther]);
+                }
+            }
+            return *this;
         }
 
         size_t rows{0}, cols{0}, numElements{0};
@@ -85,7 +110,7 @@ namespace BitMth::linalg{
                 std::memcpy(m,inMatrix.m,numElements * sizeof(T));
             }
 
-        [[nodiscard]] Matrix<T> clone(core::Arena *arenaContainer) const {
+        Matrix<T> clone(core::Arena *arenaContainer) const {
             Matrix<T> copy(rows,cols,stride,arenaContainer);
             std::memcpy(copy.m, m, numElements * sizeof(T));
             return copy;
@@ -173,58 +198,55 @@ namespace BitMth::linalg{
 
         // ----------- ADDITION OPERATOR -----------
         Matrix& operator+=(T scalar) {
-            for (size_t i = 0; i < numElements; i++) m[i] += scalar;
-            return *this;
+            return _scalarApplyFunctionInPlace(scalar, [](T& element, T sca) { element += sca; });
         }
-        [[nodiscard]] Matrix<T> operator+(T scalar) const {
-            return Matrix<T>::_scalarApplyFunction(*this, scalar, nullptr, [](T element, T sca){ return element + sca; });
+        Matrix<T> operator+(T scalar) const {
+            return _scalarApplyFunction(*this, scalar, nullptr, [](T element, T sca){ return element + sca; });
         }
-        [[nodiscard]] friend Matrix<T> operator+(T scalar, const Matrix<T>& matrix) {
+        friend Matrix<T> operator+(T scalar, const Matrix<T>& matrix) {
             return matrix + scalar;
         }
-        [[nodiscard]] static Matrix<T> add(const Matrix<T>& matrix, T scalar, core::Arena* targetArena) {
-            return Matrix<T>::_scalarApplyFunction(matrix, scalar, targetArena, [](T element, T sca){ return element + sca; });
+        static Matrix<T> add(const Matrix<T>& matrix, T scalar, core::Arena* targetArena) {
+            return _scalarApplyFunction(matrix, scalar, targetArena, [](T element, T sca){ return element + sca; });
         }
-        [[nodiscard]] static Matrix<T> add(T scalar, const Matrix<T>& matrix, core::Arena* targetArena) {
-            return Matrix<T>::add(matrix, scalar, targetArena);
+        static Matrix<T> add(T scalar, const Matrix<T>& matrix, core::Arena* targetArena) {
+            return add(matrix, scalar, targetArena);
         }
         // ------------------------------------------
 
         // ----------- SUBTRACTION OPERATOR -----------
         Matrix& operator-=(T scalar) {
-            for (size_t i = 0; i < numElements; i++) m[i] -= scalar;
-            return *this;
+            return _scalarApplyFunctionInPlace(scalar, [](T& element, T sca) { element -= sca; });
         }
-        [[nodiscard]] Matrix<T> operator-(T scalar) const {
-            return Matrix<T>::_scalarApplyFunction(*this, scalar, nullptr, [](T element, T sca){ return element - sca; });
+        Matrix<T> operator-(T scalar) const {
+            return _scalarApplyFunction(*this, scalar, nullptr, [](T element, T sca){ return element - sca; });
         }
-        [[nodiscard]] friend Matrix<T> operator-(T scalar, const Matrix<T>& matrix) {
-            return Matrix<T>::_scalarApplyFunction(matrix, scalar, nullptr, [](T element, T sca){ return sca - element; });
+        friend Matrix<T> operator-(T scalar, const Matrix<T>& matrix) {
+            return _scalarApplyFunction(matrix, scalar, nullptr, [](T element, T sca){ return sca - element; });
         }
-        [[nodiscard]] static Matrix<T> sub(const Matrix<T>& matrix, T scalar, core::Arena* targetArena) {
-            return Matrix<T>::_scalarApplyFunction(matrix, scalar, targetArena, [](T element, T sca){ return element - sca; });
+        static Matrix<T> sub(const Matrix<T>& matrix, T scalar, core::Arena* targetArena) {
+            return _scalarApplyFunction(matrix, scalar, targetArena, [](T element, T sca){ return element - sca; });
         }
-        [[nodiscard]] static Matrix<T> sub(T scalar,const Matrix<T>& matrix, core::Arena* targetArena) {
-            return Matrix<T>::_scalarApplyFunction(matrix, scalar, targetArena, [](T element, T sca){ return sca - element; });
+        static Matrix<T> sub(T scalar,const Matrix<T>& matrix, core::Arena* targetArena) {
+            return _scalarApplyFunction(matrix, scalar, targetArena, [](T element, T sca){ return sca - element; });
         }
         // ------------------------------------------
 
         // ----------- MULTIPLICATION OPERATOR -----------
         Matrix& operator*=(T scalar) {
-            for (size_t i = 0; i < numElements; i++) m[i] *= scalar;
-            return *this;
+            return _scalarApplyFunctionInPlace(scalar, [](T& element, T sca) { element *= sca; });           
         }
-        [[nodiscard]] Matrix<T> operator*(T scalar) const {
-            return Matrix<T>::_scalarApplyFunction(*this, scalar, nullptr, [](T element, T sca){ return element * sca; });
+        Matrix<T> operator*(T scalar) const {
+            return _scalarApplyFunction(*this, scalar, nullptr, [](T element, T sca){ return element * sca; });
         }
-        [[nodiscard]] friend Matrix<T> operator*(T scalar, const Matrix<T>& matrix) {
+        friend Matrix<T> operator*(T scalar, const Matrix<T>& matrix) {
             return matrix * scalar;
         }
-        [[nodiscard]] static Matrix<T> mul(const Matrix<T>& matrix, T scalar, core::Arena* targetArena) {
-            return Matrix<T>::_scalarApplyFunction(matrix, scalar, targetArena, [](T element, T sca){ return element * sca; });
+        static Matrix<T> mul(const Matrix<T>& matrix, T scalar, core::Arena* targetArena) {
+            return _scalarApplyFunction(matrix, scalar, targetArena, [](T element, T sca){ return element * sca; });
         }
-        [[nodiscard]] static Matrix<T> mul(T scalar, const Matrix<T>& matrix, core::Arena* targetArena) {
-            return Matrix<T>::mul(matrix, scalar, targetArena);
+        static Matrix<T> mul(T scalar, const Matrix<T>& matrix, core::Arena* targetArena) {
+            return mul(matrix, scalar, targetArena);
         }
         // ------------------------------------------
 
@@ -238,7 +260,7 @@ namespace BitMth::linalg{
             T aux = T(1) / scalar;
             return *this *= aux;
         }
-        [[nodiscard]] Matrix<T> operator/(T scalar) const {
+        Matrix<T> operator/(T scalar) const {
             CHECK_ERROR_MATRIX(
                 scalar < utils::EPSILON<T> && scalar > -utils::EPSILON<T>,
                 "Matrix operator/ scalar",
@@ -247,7 +269,7 @@ namespace BitMth::linalg{
             T aux = T(1) / scalar;
             return *this * aux;
         }
-        [[nodiscard]] static Matrix<T> div(const Matrix<T>& matrix, T scalar, core::Arena* targetArena) {
+        static Matrix<T> div(const Matrix<T>& matrix, T scalar, core::Arena* targetArena) {
             CHECK_ERROR_MATRIX(
                 scalar < utils::EPSILON<T> && scalar > -utils::EPSILON<T>,
                 "Matrix operator/ scalar",
@@ -262,14 +284,14 @@ namespace BitMth::linalg{
         Matrix<T>& powInPlace(T exponent) {
             if(exponent < utils::EPSILON<T> && exponent > -utils::EPSILON<T>){ 
                 setOne();
-            }else if (exponent == T(2)) {
-                for (size_t i = 0; i < numElements; i++) m[i] *= m[i];
-            }else{
-                for (size_t i = 0; i < numElements; i++) m[i] = std::pow(m[i], exponent);
+                return *this;
             }
-            return *this;
+            if (exponent == T(2)) {
+                return _scalarApplyFunctionInPlace(exponent, [](T& element, T exp) { element *= element; });
+            } 
+            return _scalarApplyFunctionInPlace(exponent, [](T& element, T exp) { element = std::pow(element, exp); });
         }
-        [[nodiscard]] Matrix<T> pow(T exponent, core::Arena* targetArena = nullptr) const {
+        Matrix<T> pow(T exponent, core::Arena* targetArena = nullptr) const {
             if(exponent < utils::EPSILON<T> && exponent > -utils::EPSILON<T>){
                 Matrix<T> result(rows, cols, stride, targetArena);
                 result.setOne();
@@ -291,24 +313,9 @@ namespace BitMth::linalg{
                 "matrix add (+=)",
                 "Matrix dimensions must match (rows = rows && cols == cols)"
             );
-            const size_t rowJumpThis = stride[0] / sizeof(T);
-            const size_t colJumpThis = stride[1] / sizeof(T);
-    
-            const size_t rowJumpOther = matrix.stride[0] / sizeof(T);
-            const size_t colJumpOther = matrix.stride[1] / sizeof(T);
-
-            for (size_t i = 0; i < rows; i++) {
-                T* const rowThis = &m[i * rowJumpThis];
-                const T* const rowOther = &matrix.m[i * rowJumpOther];
-
-                for (size_t j = 0; j < cols; j++) {
-                    rowThis[j * colJumpThis] += rowOther[j * colJumpOther];
-                }
-            }
-
-            return *this;
+            return _matrixApplyFunctionInPlace(matrix, [](T& valThis, T valOther) { valThis += valOther; });
         }
-        [[nodiscard]] Matrix<T> operator+(const Matrix<T>& matrix) const {
+        Matrix<T> operator+(const Matrix<T>& matrix) const {
             CHECK_ERROR_MATRIX(
                 rows != matrix.rows || cols != matrix.cols,
                 "matrix add (+)",
@@ -316,7 +323,7 @@ namespace BitMth::linalg{
             );
             return Matrix<T>::_matrixApplyFunction(*this, matrix,nullptr, [](T mA, T mB){ return mA + mB; });
         }
-        [[nodiscard]] static Matrix<T> add(const Matrix<T>& matrixA, const Matrix<T>& matrixB, core::Arena* targetArena){
+        static Matrix<T> add(const Matrix<T>& matrixA, const Matrix<T>& matrixB, core::Arena* targetArena){
             CHECK_ERROR_MATRIX(
                 matrixA.rows != matrixB.rows || matrixA.cols != matrixB.cols,
                 "Matrix::add",
@@ -333,24 +340,9 @@ namespace BitMth::linalg{
                 "matrix sub (-=)",
                 "Matrix dimensions must match (rows == rows && cols == cols)"
             );
-            const size_t rowJumpThis = stride[0] / sizeof(T);
-            const size_t colJumpThis = stride[1] / sizeof(T);
-    
-            const size_t rowJumpOther = matrix.stride[0] / sizeof(T);
-            const size_t colJumpOther = matrix.stride[1] / sizeof(T);
-
-            for (size_t i = 0; i < rows; i++) {
-                T* const rowThis = &m[i * rowJumpThis];
-                const T* const rowOther = &matrix.m[i * rowJumpOther];
-
-                for (size_t j = 0; j < cols; j++) {
-                    rowThis[j * colJumpThis] -= rowOther[j * colJumpOther];
-                }
-            }
-
-            return *this;
+            return _matrixApplyFunctionInPlace(matrix, [](T& valThis, T valOther) { valThis -= valOther; });
         }
-        [[nodiscard]] Matrix<T> operator-(const Matrix<T>& matrix) const {
+        Matrix<T> operator-(const Matrix<T>& matrix) const {
             CHECK_ERROR_MATRIX(
                 rows != matrix.rows || cols != matrix.cols,
                 "matrix sub (-)",
@@ -358,7 +350,7 @@ namespace BitMth::linalg{
             );
             return Matrix<T>::_matrixApplyFunction(*this, matrix, nullptr, [](T mA, T mB){ return mA - mB; });
         }
-        [[nodiscard]] static Matrix<T> sub(const Matrix<T>& matrixA, const Matrix<T>& matrixB, core::Arena* targetArena){
+        static Matrix<T> sub(const Matrix<T>& matrixA, const Matrix<T>& matrixB, core::Arena* targetArena){
             CHECK_ERROR_MATRIX(
                 matrixA.rows != matrixB.rows || matrixA.cols != matrixB.cols,
                 "Matrix::sub",
@@ -373,7 +365,7 @@ namespace BitMth::linalg{
             *this = *this * matrix;
             return *this;
         }
-        [[nodiscard]] Matrix<T> operator*(const Matrix<T>& matrix) const {
+        Matrix<T> operator*(const Matrix<T>& matrix) const {
             CHECK_ERROR_MATRIX(
                 cols != matrix.rows,
                 "matrix multiplication (*)",
@@ -403,7 +395,7 @@ namespace BitMth::linalg{
 
             return result;
         }
-        [[nodiscard]] static Matrix<T> mul(const Matrix<T>& matrixA, const Matrix<T>& matrixB, core::Arena* targetArena) {
+        static Matrix<T> mul(const Matrix<T>& matrixA, const Matrix<T>& matrixB, core::Arena* targetArena) {
             CHECK_ERROR_MATRIX(
                 matrixA.cols != matrixB.rows,
                 "matrix::mul",
@@ -439,23 +431,9 @@ namespace BitMth::linalg{
                 "matrix hadamard product ( (·) )",
                 "Matrix dimensions must match (rows = rows && cols == cols)"
             );
-            const size_t rowJumpThis = stride[0] / sizeof(T);
-            const size_t colJumpThis = stride[1] / sizeof(T);
-            
-            const size_t rowJumpOther = matrix.stride[0] / sizeof(T);
-            const size_t colJumpOther = matrix.stride[1] / sizeof(T);
-
-            for (size_t i = 0; i < rows; i++) {
-                T* const rowThis = &m[i * rowJumpThis];
-                const T* const rowOther = &matrix.m[i * rowJumpOther];
-
-                for (size_t j = 0; j < cols; j++) {
-                    rowThis[j * colJumpThis] *= rowOther[j * colJumpOther];
-                }
-            }
-            return *this;
+            return _matrixApplyFunctionInPlace(matrix, [](T& valThis, T valOther) { valThis *= valOther; });
         }
-        [[nodiscard]] static Matrix<T> hadamard(const Matrix<T>& matrixA, const Matrix<T>& matrixB, core::Arena* targetArena){
+        static Matrix<T> hadamard(const Matrix<T>& matrixA, const Matrix<T>& matrixB, core::Arena* targetArena){
             CHECK_ERROR_MATRIX(
                 matrixA.rows != matrixB.rows || matrixA.cols != matrixB.cols,
                 "matrix hadamard product ( (·) )",
@@ -471,13 +449,13 @@ namespace BitMth::linalg{
             return *this;
         } 
 
-        [[nodiscard]] static Matrix<T> t(const Matrix<T>& matrix, core::Arena* targetArena = nullptr) {
+        static Matrix<T> t(const Matrix<T>& matrix, core::Arena* targetArena = nullptr) {
             Matrix<T> result = matrix.clone(targetArena);
             result.tInPlace();
             return result;
         }
 
-        [[nodiscard]] Matrix<T> operator/(const Matrix<T>& matrix) const {
+        Matrix<T> operator/(const Matrix<T>& matrix) const {
             CHECK_ERROR_MATRIX(
                 rows != matrix.rows || cols != matrix.cols,
                 "Matrix operator/",
@@ -496,7 +474,7 @@ namespace BitMth::linalg{
             });
         }
 
-        [[nodiscard]] bool operator==(const Matrix<T>& matrix) const {
+        bool operator==(const Matrix<T>& matrix) const {
             if(rows != matrix.getRows() || 
                matrix.getCols() != cols || 
                matrix.size() != numElements ||
@@ -512,7 +490,7 @@ namespace BitMth::linalg{
             return true;
         }
 
-        [[nodiscard]] bool isApprox(const Matrix<T>& matrix, T margin = utils::EPSILON<T>) const {
+        bool isApprox(const Matrix<T>& matrix, T margin = utils::EPSILON<T>) const {
             if (rows != matrix.rows || cols != matrix.cols) return false;
             for (size_t i = 0; i < rows; i++) {
                 for (size_t j = 0; j < cols; j++) {
@@ -524,7 +502,7 @@ namespace BitMth::linalg{
             return true;
         }
 
-        [[nodiscard]] Matrix<T> reduceSumCols(core::Arena* targetArena = nullptr) const{
+        Matrix<T> reduceSumCols(core::Arena* targetArena = nullptr) const{
             Matrix<T> result(rows, 1, targetArena, true);
             const size_t rowJump = stride[0] / sizeof(T);
 
@@ -537,7 +515,7 @@ namespace BitMth::linalg{
             }
             return result;
         }
-        [[nodiscard]] Matrix<T> reduceSumRows(core::Arena* targetArena = nullptr) const{
+        Matrix<T> reduceSumRows(core::Arena* targetArena = nullptr) const{
             Matrix<T> result(1, cols, targetArena, true);
             const size_t rowJump = stride[0] / sizeof(T);
 
@@ -549,13 +527,13 @@ namespace BitMth::linalg{
             }
             return result;
         }
-        [[nodiscard]] T reduceSumTotal() const {
+        T reduceSumTotal() const {
             T result = 0;
             for (size_t i = 0; i < numElements; i++) result += m[i];
             return result;
         }
 
-        [[nodiscard]] Matrix<T> addRowVector(const Matrix<T>& rowVector, core::Arena* targetArena = nullptr) const {
+        Matrix<T> addRowVector(const Matrix<T>& rowVector, core::Arena* targetArena = nullptr) const {
             CHECK_ERROR_MATRIX(
                 rowVector.rows != 1 || rowVector.cols != cols,
                 "Matrix operator (addRowVector)",
@@ -616,7 +594,7 @@ namespace BitMth::linalg{
             return os;
         }
 
-        [[nodiscard]] bool hasNaN() const {
+        bool hasNaN() const {
             for (size_t i = 0; i < numElements; i++) {
                 if (std::isnan(m[i])) return true;
             }
