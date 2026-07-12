@@ -524,23 +524,21 @@ namespace BitMth::linalg{
             return true;
         }
 
-        [[nodiscard]] Matrix<T> reduceSumCols() const{
-            Matrix<T> result(rows, 1);
+        [[nodiscard]] Matrix<T> reduceSumCols(core::Arena* targetArena = nullptr) const{
+            Matrix<T> result(rows, 1, targetArena, true);
             const size_t rowJump = stride[0] / sizeof(T);
 
             for (size_t i = 0; i < rows; i++){
-                T sum = 0;
                 const T* const currentRow = &m[i * rowJump];
 
                 for (size_t j = 0; j < cols; j++){
-                    sum += currentRow[j];  
+                    result.m[i] += currentRow[j];  
                 }
-                result.m[i] = sum;
             }
             return result;
         }
-        [[nodiscard]] Matrix<T> reduceSumRows() const{
-            Matrix<T> result(1, cols);
+        [[nodiscard]] Matrix<T> reduceSumRows(core::Arena* targetArena = nullptr) const{
+            Matrix<T> result(1, cols, targetArena, true);
             const size_t rowJump = stride[0] / sizeof(T);
 
             for (size_t i = 0; i < rows; i++){
@@ -619,16 +617,8 @@ namespace BitMth::linalg{
         }
 
         [[nodiscard]] bool hasNaN() const {
-            const size_t rowJump = stride[0] / sizeof(T);
-            const size_t colJump = stride[1] / sizeof(T);
-
-            for (size_t i = 0; i < rows; i++) {
-                for (size_t j = 0; j < cols; j++) {
-                    // std::isnan devuelve true si el número es NaN
-                    if (std::isnan(m[i * rowJump + j * colJump])) {
-                        return true; 
-                    }
-                }
+            for (size_t i = 0; i < numElements; i++) {
+                if (std::isnan(m[i])) return true;
             }
             return false;
         }
