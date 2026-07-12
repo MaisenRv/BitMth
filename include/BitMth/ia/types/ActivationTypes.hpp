@@ -1,4 +1,5 @@
 #pragma once
+#include "BitMth/core/Arena.hpp"
 #include <BitMth/linalg/Matrix.hpp>
 
 namespace BitMth::ia::types{
@@ -11,7 +12,7 @@ namespace BitMth::ia::types{
 
     template<typename T>
     struct ActivationContent{
-        linalg::Matrix<T> (* function)(const linalg::Matrix<T>&);
-        linalg::Matrix<T> (* devFunction)(const linalg::Matrix<T>&,const linalg::Matrix<T>&);
+        linalg::Matrix<T> (* function)(const linalg::Matrix<T>&, core::Arena*);
+        linalg::Matrix<T> (* devFunction)(const linalg::Matrix<T>&,const linalg::Matrix<T>&, core::Arena*);
     };
 }
