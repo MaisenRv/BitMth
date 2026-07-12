@@ -5,82 +5,113 @@
 #include <unordered_map>
 
 #include <BitMth/ia/types/ActivationTypes.hpp>
+#include <BitMth/core/Arena.hpp>
 
 namespace BitMth::ia{
 
     template <typename T>
     struct Activations{
 
-        [[nodiscard]] static linalg::Matrix<T> relu(const linalg::Matrix<T>& matrixZ){
-            linalg::Matrix<T> result(matrixZ.getRows(), matrixZ.getCols());
-            for (size_t i = 0; i < matrixZ.size(); i++) {
-                result.getValues()[i] = std::max( T(0.0), matrixZ.getValues()[i]);
-            }
-            return result;
-        };
-
-        [[nodiscard]] static linalg::Matrix<T> reluDerivative(const linalg::Matrix<T>& matrixZ, const linalg::Matrix<T>& matrixA){
-            linalg::Matrix<T> result(matrixZ.getRows(), matrixZ.getCols());
-            for (size_t i = 0; i < matrixZ.size(); i++) {
-                result.getValues()[i] = matrixZ.getValues()[i] > T(0.0) ? T(1.0) : T(0.0);
-            }
-            return result;
-        };
-
-        [[nodiscard]] static linalg::Matrix<T> sigmoid(const linalg::Matrix<T>& matrixZ){
-            linalg::Matrix<T> result(matrixZ.getRows(), matrixZ.getCols());
-            for (size_t i = 0; i < matrixZ.size(); i++) {
-                result.getValues()[i] = T(1.0) / ( T(1.0) + std::exp(-matrixZ.getValues()[i]) );
-            }
-            return result;
-        };
-
-        [[nodiscard]] static linalg::Matrix<T> sigmoidDerivative(const linalg::Matrix<T>& matrixZ, const linalg::Matrix<T>& matrixA){
-            linalg::Matrix<T> result(matrixA.getRows(), matrixA.getCols());
-            for (size_t i = 0; i < matrixA.size(); i++) {
-                result.getValues()[i] = matrixA.getValues()[i] * ( T(1.0) - matrixA.getValues()[i] );
-            }
-            return result;
-        };
-
-        [[nodiscard]] static linalg::Matrix<T> Tanh(const linalg::Matrix<T>& matrixZ){
-            linalg::Matrix<T> result(matrixZ.getRows(), matrixZ.getCols());
-            for (size_t i = 0; i < matrixZ.size(); i++) {
-                result.getValues()[i] = std::tanh(matrixZ.getValues()[i]);
-            }
-            return result;
-        };
-
-        [[nodiscard]] static linalg::Matrix<T> TanhDerivative(const linalg::Matrix<T>& matrixZ, const linalg::Matrix<T>& matrixA){
-            linalg::Matrix<T> result(matrixA.getRows(), matrixA.getCols());
-            for (size_t i = 0; i < matrixA.size(); i++) {
-                result.getValues()[i] = T(1.0) - (matrixA.getValues()[i] * matrixA.getValues()[i]);
-            }
-            return result;
-        };
-
-        [[nodiscard]] static linalg::Matrix<T> softmax(const linalg::Matrix<T>& matrixZ){
-            linalg::Matrix<T> result(matrixZ.getRows(), matrixZ.getCols());
-            for (size_t r = 0; r < matrixZ.getRows(); r++) {
-                size_t rowOffset = r * matrixZ.getCols();
-
-                T maxVal = matrixZ.getValues()[rowOffset];
-                for (size_t c = 1; c < matrixZ.getCols(); c++) {
-                    maxVal = std::max(maxVal, matrixZ.getValues()[rowOffset + c]);
-                }
+        static linalg::Matrix<T> relu(const linalg::Matrix<T>& matrixZ, core::Arena* targetArena = nullptr ){
+            linalg::Matrix<T> result(matrixZ.getRows(), matrixZ.getCols(), targetArena, false);
+            const T* const valuesZ = matrixZ.getValues();
+            const size_t size = matrixZ.size();
+            T* const valuesR = result.getValues();
             
+            for (size_t i = 0; i < size; i++) {
+                valuesR[i] = std::max(T(0.0), valuesZ[i]);
+            }
+            return result;
+        };
+
+        static linalg::Matrix<T> reluDerivative(const linalg::Matrix<T>& matrixZ, const linalg::Matrix<T>& matrixA, core::Arena* targetArena = nullptr){
+            linalg::Matrix<T> result(matrixZ.getRows(), matrixZ.getCols(), targetArena, false);
+            const T* const valuesZ = matrixZ.getValues();
+            const size_t size = matrixZ.size();
+            T* const valuesR = result.getValues();
+            
+            for (size_t i = 0; i < size; i++) {
+                valuesR[i] = valuesZ[i] > T(0.0) ? T(1.0) : T(0.0);
+            }
+            return result;
+        };
+
+        static linalg::Matrix<T> sigmoid(const linalg::Matrix<T>& matrixZ, core::Arena* targetArena = nullptr){
+            linalg::Matrix<T> result(matrixZ.getRows(), matrixZ.getCols(), targetArena, false);
+            const T* const valuesZ = matrixZ.getValues();
+            const size_t size = matrixZ.size();
+            T* const valuesR = result.getValues();
+
+            for (size_t i = 0; i < size; i++) {
+                valuesR[i] = T(1.0) / ( T(1.0) + std::exp(-valuesZ[i]) );
+            }
+            return result;
+        };
+
+        static linalg::Matrix<T> sigmoidDerivative(const linalg::Matrix<T>& matrixZ, const linalg::Matrix<T>& matrixA, core::Arena* targetArena = nullptr){
+            linalg::Matrix<T> result(matrixA.getRows(), matrixA.getCols(), targetArena, false);
+            const T* const valuesA = matrixA.getValues();
+            T* const valuesR = result.getValues();
+            const size_t size = matrixA.size();
+
+            for (size_t i = 0; i < size; i++) {
+                valuesR[i] = valuesA[i] * (T(1.0) - valuesA[i]);
+            }
+            return result;
+
+        };
+
+        static linalg::Matrix<T> Tanh(const linalg::Matrix<T>& matrixZ, core::Arena* targetArena = nullptr){
+            linalg::Matrix<T> result(matrixZ.getRows(), matrixZ.getCols(), targetArena, false);
+            const T* const valuesZ = matrixZ.getValues();
+            const size_t size = matrixZ.size();
+            T* const valuesR = result.getValues();
+
+            for (size_t i = 0; i < size; i++) {
+                valuesR[i] = std::tanh(valuesZ[i]);
+            }
+            return result;
+        };
+
+        static linalg::Matrix<T> TanhDerivative(const linalg::Matrix<T>& matrixZ, const linalg::Matrix<T>& matrixA, core::Arena* targetArena = nullptr){
+            linalg::Matrix<T> result(matrixA.getRows(), matrixA.getCols(), targetArena, false);
+            const T* const valuesA = matrixA.getValues();
+            T* const valuesR = result.getValues();
+            const size_t size = matrixA.size();
+
+            for (size_t i = 0; i < size; i++) {
+                valuesR[i] = T(1.0) - (valuesA[i] * valuesA[i]);
+            }
+            return result;
+        };
+
+        static linalg::Matrix<T> softmax(const linalg::Matrix<T>& matrixZ, core::Arena* targetArena = nullptr){
+            linalg::Matrix<T> result(matrixZ.getRows(), matrixZ.getCols(), targetArena, false);
+    
+            const size_t jumpRowIn  = matrixZ.getStrides()[0] / sizeof(T);
+            const size_t jumpColIn  = matrixZ.getStrides()[1] / sizeof(T);
+    
+            const size_t jumpRowOut = result.getStrides()[0] / sizeof(T);
+
+            for (size_t r = 0; r < matrixZ.getRows(); r++) {
+                const T* const rowIn = &matrixZ.getValues()[r * jumpRowIn];
+                T* const rowOut = &result.getValues()[r * jumpRowOut];
+
+                T maxVal = rowIn[0 * jumpColIn];
+                for (size_t c = 1; c < matrixZ.getCols(); c++) {
+                    maxVal = std::max(maxVal, rowIn[c * jumpColIn]);
+                }
+    
                 T sum = T(0.0);
                 for (size_t c = 0; c < matrixZ.getCols(); c++) {
-                    size_t idx = rowOffset + c;
-                    result.getValues()[idx] = std::exp(matrixZ.getValues()[idx] - maxVal);
-                    sum += result.getValues()[idx];
+                    rowOut[c] = std::exp(rowIn[c * jumpColIn] - maxVal); 
+                    sum += rowOut[c];
                 }
-            
+    
                 for (size_t c = 0; c < matrixZ.getCols(); c++) {
-                    result.getValues()[rowOffset + c] /= sum;
+                    rowOut[c] /= sum;
                 }
             }
-        
             return result;
         };
     };
