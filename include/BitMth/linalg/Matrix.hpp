@@ -624,6 +624,21 @@ namespace BitMth::linalg{
             return os;
         }
 
+        [[nodiscard]] bool hasNaN() const {
+            const size_t rowJump = stride[0] / sizeof(T);
+            const size_t colJump = stride[1] / sizeof(T);
+
+            for (size_t i = 0; i < rows; i++) {
+                for (size_t j = 0; j < cols; j++) {
+                    // std::isnan devuelve true si el número es NaN
+                    if (std::isnan(m[i * rowJump + j * colJump])) {
+                        return true; 
+                    }
+                }
+            }
+            return false;
+        }
+
         void print(int precision = 4, int width = 8) const {
             std::ios_base::fmtflags f(std::cout.flags());
             
