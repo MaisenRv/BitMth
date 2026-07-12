@@ -23,7 +23,7 @@ namespace BitMth::linalg{
 
         template< typename Op>
         [[nodiscard]] static Matrix<T> _scalarApplyFunction(const Matrix<T> &matrix,T scalar, core::Arena *arenaContainer, Op funct){
-            Matrix<T> result(matrix.rows, matrix.cols, matrix.stride, arenaContainer);
+            Matrix<T> result(matrix.rows, matrix.cols, arenaContainer, false);
             for (size_t i = 0; i < matrix.numElements; i++){
                 result.m[i] = funct(matrix.m[i], scalar);
             }
@@ -32,10 +32,19 @@ namespace BitMth::linalg{
 
         template< typename Op>
         [[nodiscard]] static Matrix<T> _matrixApplyFunction(const Matrix<T> &matrixA, const Matrix<T> &matrixB, core::Arena *arenaContainer, Op funct){
-            Matrix<T> result(matrixA.rows, matrixA.cols, matrixA.stride, arenaContainer);
-            for (size_t i = 0; i < matrixA.numElements; i++){
-                result.m[i] = funct(matrixA.m[i], matrixB.m[i]);
+            Matrix<T> result(matrixA.rows, matrixA.cols, arenaContainer, false);
+            const size_t aJumpRow = matrixA.stride[0] / sizeof(T);
+            const size_t aJumpCol = matrixA.stride[1] / sizeof(T);
+            const size_t bJumpRow = matrixB.stride[0] / sizeof(T);
+            const size_t bJumpCol = matrixB.stride[1] / sizeof(T);
+            for (size_t i = 0; i < matrixA.rows; i++) {
+                for (size_t j = 0; j < matrixA.cols; j++) {
+                    T valA = matrixA.m[i * aJumpRow + j * aJumpCol];
+                    T valB = matrixB.m[i * bJumpRow+ j * bJumpCol];
+                    result.m[i * result.cols + j] = funct(valA, valB);
+                }
             }
+
             return result;
         }
 
@@ -296,7 +305,21 @@ namespace BitMth::linalg{
                 "matrix add (+=)",
                 "Matrix dimensions must match (rows = rows && cols == cols)"
             );
-            for (size_t i = 0; i < numElements; i++) m[i] += matrix.m[i];
+            const size_t rowJumpThis = stride[0] / sizeof(T);
+            const size_t colJumpThis = stride[1] / sizeof(T);
+    
+            const size_t rowJumpOther = matrix.stride[0] / sizeof(T);
+            const size_t colJumpOther = matrix.stride[1] / sizeof(T);
+
+            for (size_t i = 0; i < rows; i++) {
+                T* const rowThis = &m[i * rowJumpThis];
+                const T* const rowOther = &matrix.m[i * rowJumpOther];
+
+                for (size_t j = 0; j < cols; j++) {
+                    rowThis[j * colJumpThis] += rowOther[j * colJumpOther];
+                }
+            }
+
             return *this;
         }
         [[nodiscard]] Matrix<T> operator+(const Matrix<T>& matrix) const {
@@ -324,7 +347,21 @@ namespace BitMth::linalg{
                 "matrix sub (-=)",
                 "Matrix dimensions must match (rows == rows && cols == cols)"
             );
-            for (size_t i = 0; i < numElements; i++) m[i] -= matrix.m[i];
+            const size_t rowJumpThis = stride[0] / sizeof(T);
+            const size_t colJumpThis = stride[1] / sizeof(T);
+    
+            const size_t rowJumpOther = matrix.stride[0] / sizeof(T);
+            const size_t colJumpOther = matrix.stride[1] / sizeof(T);
+
+            for (size_t i = 0; i < rows; i++) {
+                T* const rowThis = &m[i * rowJumpThis];
+                const T* const rowOther = &matrix.m[i * rowJumpOther];
+
+                for (size_t j = 0; j < cols; j++) {
+                    rowThis[j * colJumpThis] -= rowOther[j * colJumpOther];
+                }
+            }
+
             return *this;
         }
         [[nodiscard]] Matrix<T> operator-(const Matrix<T>& matrix) const {
@@ -422,7 +459,6 @@ namespace BitMth::linalg{
                     rowThis[j * colJumpThis] *= rowOther[j * colJumpOther];
                 }
             }
-            // for (size_t i = 0; i < numElements; i++) m[i] *= matrix.m[i];
             return *this;
         }
         [[nodiscard]] static Matrix<T> hadamard(const Matrix<T>& matrixA, const Matrix<T>& matrixB, core::Arena* targetArena){
