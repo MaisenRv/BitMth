@@ -730,3 +730,207 @@ BIT_TEST_CASE(MatrixUtilityOperations) {
     BitMth::linalg::Matrix<float> B(2, 3, nullptr, true);
     BIT_ASSERT_THROWS(B.setIdentity());
 }
+
+
+BIT_TEST_CASE(Parallel_AdditionOperators) {
+    BitMth::linalg::Matrix<int> m(500, 400, nullptr, true);
+    m.setWith(5);
+    
+    m += 3;
+    BitMth::linalg::Matrix<int> m2(500, 400, nullptr, true);
+    m2.setWith(8);
+    BIT_ASSERT_EQ(m2, m);
+
+    BitMth::linalg::Matrix<int> m_plus = m + 2;
+    BitMth::linalg::Matrix<int> m_plus_exp(500, 400, nullptr, true);
+    m_plus_exp.setWith(10);
+    BIT_ASSERT_EQ(m_plus_exp, m_plus);
+    BIT_ASSERT_EQ(nullptr, m_plus.getArena());
+
+    BitMth::linalg::Matrix<int> m_static = BitMth::linalg::Matrix<int>::add(m, 2, nullptr);
+    BIT_ASSERT_EQ(m_plus_exp, m_static);
+    BIT_ASSERT_EQ(nullptr, m_static.getArena());
+}
+
+BIT_TEST_CASE(Parallel_SubtractionOperators) {
+    BitMth::linalg::Matrix<int> m(500, 400, nullptr, true);
+    m.setWith(10);
+
+    m -= 3;
+    BitMth::linalg::Matrix<int> m2(500, 400, nullptr, true);
+    m2.setWith(7);
+    BIT_ASSERT_EQ(m2, m);
+
+    BitMth::linalg::Matrix<int> m_sub = m - 2;
+    BitMth::linalg::Matrix<int> m_sub_exp(500, 400, nullptr, true);
+    m_sub_exp.setWith(5);
+    BIT_ASSERT_EQ(m_sub_exp, m_sub);
+
+    BitMth::linalg::Matrix<int> m_friend = 12 - m; // 12 - 7 = 5
+    BIT_ASSERT_EQ(m_sub_exp, m_friend);
+
+    BitMth::linalg::Matrix<int> m_st1 = BitMth::linalg::Matrix<int>::sub(m, 2, nullptr); // 7 - 2 = 5
+    BIT_ASSERT_EQ(m_sub_exp, m_st1);
+    BIT_ASSERT_EQ(nullptr, m_st1.getArena());
+
+    BitMth::linalg::Matrix<int> m_st2 = BitMth::linalg::Matrix<int>::sub(12, m, nullptr); // 12 - 7 = 5
+    BIT_ASSERT_EQ(m_sub_exp, m_st2);
+    BIT_ASSERT_EQ(nullptr, m_st2.getArena());
+}
+
+BIT_TEST_CASE(Parallel_MultiplicationAndDivisionOperators) {
+    BitMth::linalg::Matrix<float> m(500, 400, nullptr, true);
+    m.setWith(20.0f);
+
+    m *= 3.0f;
+    BitMth::linalg::Matrix<float> m2(500, 400, nullptr, true);
+    m2.setWith(60.0f);
+    BIT_EXPECT_TRUE(m.isApprox(m2));
+
+    m /= 2.0f;
+    BitMth::linalg::Matrix<float> m3(500, 400, nullptr, true);
+    m3.setWith(30.0f);
+    BIT_EXPECT_TRUE(m.isApprox(m3));
+
+    BitMth::linalg::Matrix<float> m_div = BitMth::linalg::Matrix<float>::div(m, 3.0f, nullptr); // 30 / 3 = 10
+    BitMth::linalg::Matrix<float> m_div_exp(500, 400, nullptr, true);
+    m_div_exp.setWith(10.0f);
+    
+    BIT_EXPECT_TRUE(m_div.isApprox(m_div_exp));
+    BIT_ASSERT_EQ(nullptr, m_div.getArena());
+
+    BIT_ASSERT_THROWS(m /= 0.0f);
+    BIT_ASSERT_THROWS(m / 0.0f);
+    BIT_ASSERT_THROWS(BitMth::linalg::Matrix<float>::div(m, 0.0f, nullptr));
+}
+
+BIT_TEST_CASE(Parallel_PowOperations) {
+    BitMth::linalg::Matrix<float> m(500, 400, nullptr, true);
+    m.setWith(4.0f);
+
+    BitMth::linalg::Matrix<float> m_pow2 = m.pow(2.0f);
+    BitMth::linalg::Matrix<float> exp_pow2(500, 400, nullptr, true);
+    exp_pow2.setWith(16.0f);
+    BIT_EXPECT_TRUE(m_pow2.isApprox(exp_pow2));
+
+    BitMth::linalg::Matrix<float> m_pow_frac = exp_pow2.pow(0.5f);
+    BIT_EXPECT_TRUE(m_pow_frac.isApprox(m, 1e-4f));
+
+    m.powInPlace(2.0f); // 4^2 = 16
+    BIT_EXPECT_TRUE(m.isApprox(exp_pow2));
+
+    m.powInPlace(0.0f);
+    BitMth::linalg::Matrix<float> one(500, 400, nullptr, true);
+    one.setOne();
+    BIT_ASSERT_EQ(one, m);
+}
+
+BIT_TEST_CASE(Parallel_MatrixMatrixAddition) {
+    BitMth::linalg::Matrix<int> m1(500, 400, nullptr, true);
+    BitMth::linalg::Matrix<int> m2(500, 400, nullptr, true);
+    
+    m1.setWith(5);
+    m2.setWith(3);
+
+    m1 += m2; // Cada elemento: 5 + 3 = 8
+    
+    BitMth::linalg::Matrix<int> expected_sum(500, 400, nullptr, true);
+    expected_sum.setWith(8);
+    BIT_ASSERT_EQ(expected_sum, m1);
+
+    m1.setWith(5);
+
+    BitMth::linalg::Matrix<int> m_res = m1 + m2;
+    BIT_ASSERT_EQ(expected_sum, m_res);
+    BIT_ASSERT_EQ(nullptr, m_res.getArena());
+
+    BitMth::linalg::Matrix<int> m_static = BitMth::linalg::Matrix<int>::add(m1, m2, nullptr);
+    BIT_ASSERT_EQ(expected_sum, m_static);
+    BIT_ASSERT_EQ(nullptr, m_static.getArena());
+
+    BitMth::linalg::Matrix<int> m_wrong(500, 399, nullptr, true);
+    BIT_ASSERT_THROWS(m1 += m_wrong);
+    BIT_ASSERT_THROWS(m1 + m_wrong);
+    BIT_ASSERT_THROWS(BitMth::linalg::Matrix<int>::add(m1, m_wrong, nullptr));
+}
+
+BIT_TEST_CASE(Parallel_MatrixMatrixSubtraction) {
+    BitMth::linalg::Matrix<int> m1(500, 400, nullptr, true);
+    BitMth::linalg::Matrix<int> m2(500, 400, nullptr, true);
+    
+    m1.setWith(10);
+    m2.setWith(4);
+
+    m1 -= m2; // Cada elemento: 10 - 4 = 6
+    
+    BitMth::linalg::Matrix<int> expected_sub(500, 400, nullptr, true);
+    expected_sub.setWith(6);
+    BIT_ASSERT_EQ(expected_sub, m1);
+
+    m1.setWith(10);
+
+    BitMth::linalg::Matrix<int> m_res = m1 - m2;
+    BIT_ASSERT_EQ(expected_sub, m_res);
+    BIT_ASSERT_EQ(nullptr, m_res.getArena());
+
+    BitMth::linalg::Matrix<int> m_static = BitMth::linalg::Matrix<int>::sub(m1, m2, nullptr);
+    BIT_ASSERT_EQ(expected_sub, m_static);
+    BIT_ASSERT_EQ(nullptr, m_static.getArena());
+
+    BitMth::linalg::Matrix<int> m_wrong(499, 400, nullptr, true);
+    BIT_ASSERT_THROWS(m1 -= m_wrong);
+    BIT_ASSERT_THROWS(m1 - m_wrong);
+    BIT_ASSERT_THROWS(BitMth::linalg::Matrix<int>::sub(m1, m_wrong, nullptr));
+}
+
+BIT_TEST_CASE(Parallel_MatrixMatrixMultiplication) {
+    BitMth::linalg::Matrix<float> m1(500, 400, nullptr, true);
+    m1.setWith(2.0f);
+
+    BitMth::linalg::Matrix<float> m2(400, 300, nullptr, true);
+    m2.setWith(3.0f);
+
+    BitMth::linalg::Matrix<float> expected_mul(500, 300, nullptr, true);
+    expected_mul.setWith(2400.0f);
+
+    BitMth::linalg::Matrix<float> m_static = BitMth::linalg::Matrix<float>::mul(m1, m2, nullptr);
+    BIT_EXPECT_TRUE(m_static.isApprox(expected_mul));
+    BIT_ASSERT_EQ(nullptr, m_static.getArena());
+
+    BitMth::linalg::Matrix<float> m_operator = m1 * m2;
+    BIT_EXPECT_TRUE(m_operator.isApprox(expected_mul));
+    BIT_ASSERT_EQ(nullptr, m_operator.getArena());
+
+    BitMth::linalg::Matrix<float> m_wrong(399, 300, nullptr, true);
+    BIT_ASSERT_THROWS(BitMth::linalg::Matrix<float>::mul(m1, m_wrong, nullptr));
+    BIT_ASSERT_THROWS(m1 * m_wrong);
+}
+
+BIT_TEST_CASE(Parallel_MatrixMatrixMultiplication_IdentityAndSmall) {
+    BitMth::linalg::Matrix<float> m1(500, 400, nullptr, true);
+    m1.setWith(7.5f);
+
+    BitMth::linalg::Matrix<float> identity(400, 400, nullptr, true);
+    identity.setIdentity(); // Matriz identidad 400x400
+
+    BitMth::linalg::Matrix<float> m_identity_res = m1 * identity;
+    BIT_EXPECT_TRUE(m_identity_res.isApprox(m1));
+}
+
+BIT_TEST_CASE(MatrixInPlaceMultiplication_Operator) {
+    BitMth::linalg::Matrix<float> largeA(500, 400, nullptr, true);
+    largeA.setWith(2.0f);
+
+    BitMth::linalg::Matrix<float> largeB(400, 300, nullptr, true);
+    largeB.setWith(3.0f);
+
+    BitMth::linalg::Matrix<float> expected_large(500, 300, nullptr, true);
+    expected_large.setWith(2400.0f);
+    largeA *= largeB;
+   
+    BIT_ASSERT_EQ(500, largeA.getRows());
+    BIT_ASSERT_EQ(300, largeA.getCols());
+    BIT_EXPECT_TRUE(largeA.isApprox(expected_large));
+    BitMth::linalg::Matrix<float> invalidB(400, 300, nullptr, true);
+    BIT_ASSERT_THROWS(largeA *= invalidB);
+}
