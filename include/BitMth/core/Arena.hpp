@@ -6,7 +6,7 @@
 #include <cstddef>
 
 namespace BitMth::core{
-    struct Arena{
+    struct [[nodiscard]] Arena{
         uint8_t *buffer{nullptr};
         size_t capacity{0};
         size_t offset{0};
@@ -25,7 +25,7 @@ namespace BitMth::core{
             other.offset = 0;
         }
 
-        [[nodiscard]] void* alloc(size_t size, size_t alignment = 16){
+        void* alloc(size_t size, size_t alignment = 16){
             uintptr_t currentAddress = reinterpret_cast<uintptr_t>(buffer + offset);
             uintptr_t remainder = currentAddress % alignment;
             size_t adjustment = 0;
@@ -48,7 +48,7 @@ namespace BitMth::core{
 
         void reset() noexcept { offset = 0; }
 
-        [[nodiscard]] size_t getCapacity() const noexcept { return capacity; }
-        [[nodiscard]] size_t getOffset()   const noexcept { return offset; }
+        size_t getCapacity() const noexcept { return capacity; }
+        size_t getOffset()   const noexcept { return offset; }
     };
 }
