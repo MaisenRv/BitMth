@@ -12,7 +12,6 @@
 #include <BitMth/utils/Constants.hpp>
 #include <BitMth/core/Arena.hpp>
 #include <BitMth/core/ParallelExecutor.hpp>
-#include "BitMth/core/config.hpp"
 
 namespace BitMth::linalg{
     template <typename T>
@@ -63,14 +62,27 @@ namespace BitMth::linalg{
             const size_t aJumpCol = matrixA.stride[1] / sizeof(T);
             const size_t bJumpRow = matrixB.stride[0] / sizeof(T);
             const size_t bJumpCol = matrixB.stride[1] / sizeof(T);
-            for (size_t i = 0; i < matrixA.rows; i++) {
-                for (size_t j = 0; j < matrixA.cols; j++) {
-                    T valA = matrixA.m[i * aJumpRow + j * aJumpCol];
-                    T valB = matrixB.m[i * bJumpRow+ j * bJumpCol];
-                    result.m[i * result.cols + j] = funct(valA, valB);
-                }
-            }
 
+            if (matrixA.size() < core::config::PARALLEL_THRESHOLD_COMPLEX) {
+                for (size_t i = 0; i < matrixA.rows; i++) {
+                    for (size_t j = 0; j < matrixA.cols; j++) {
+                        T valA = matrixA.m[i * aJumpRow + j * aJumpCol];
+                        T valB = matrixB.m[i * bJumpRow+ j * bJumpCol];
+                        result.m[i * result.cols + j] = funct(valA, valB);
+                    }
+                }
+                return result;
+            }
+            core::getParallelExecutor().execute(matrixA, matrixB,
+                [&result,funct,aJumpRow, aJumpCol, bJumpRow, bJumpCol](Matrix<T>& matA, Matrix<T>& matB, unsigned int startR, unsigned int endR, unsigned int startC, unsigned int endC){
+                    for (size_t i = startR; i < endR; i++) {
+                        for (size_t j = startC; j < endC; j++) {
+                            T valA = matA.m[i * aJumpRow + j * aJumpCol];
+                            T valB = matB.m[i * bJumpRow+ j * bJumpCol];
+                            result.m[i * result.cols + j] = funct(valA, valB);
+                        }
+                    }
+            });
             return result;
         }
 
@@ -81,13 +93,26 @@ namespace BitMth::linalg{
             const size_t rowJumpOther = matrix.stride[0] / sizeof(T);
             const size_t colJumpOther = matrix.stride[1] / sizeof(T);
 
-            for (size_t i = 0; i < rows; i++) {
-                T* const rowThis = &m[i * rowJumpThis];
-                const T* const rowOther = &matrix.m[i * rowJumpOther];
-                for (size_t j = 0; j < cols; j++) {
-                    funct(rowThis[j * colJumpThis], rowOther[j * colJumpOther]);
+            if (size() < core::config::PARALLEL_THRESHOLD_COMPLEX) {
+                for (size_t i = 0; i < rows; i++) {
+                    T* const rowThis = &m[i * rowJumpThis];
+                    const T* const rowOther = &matrix.m[i * rowJumpOther];
+                    for (size_t j = 0; j < cols; j++) {
+                        funct(rowThis[j * colJumpThis], rowOther[j * colJumpOther]);
+                    }
                 }
+                return *this;
             }
+            core::getParallelExecutor().execute(*this, const_cast<linalg::Matrix<T>&>(matrix),
+                [funct,rowJumpThis ,colJumpThis , rowJumpOther , colJumpOther ](Matrix<T>& matA, Matrix<T>& matB, unsigned int startR, unsigned int endR, unsigned int startC, unsigned int endC){
+                    for (size_t i = startR; i < endR; i++) {
+                        for (size_t j = startC; j < endC; j++) {
+                            T& valA = matA.m[i * rowJumpThis + j * colJumpThis ];
+                            T valB = matB.m[i * rowJumpOther + j * colJumpOther ];
+                            funct(valA, valB);
+                        }
+                    }
+            });
             return *this;
         }
 
@@ -385,26 +410,46 @@ namespace BitMth::linalg{
                 "Matrix dimensions must match rows = cols"
             );
 
-            Matrix<T> result(rows, matrix.cols);
+            Matrix<T> result(rows, matrix.cols, nullptr, true);
             const size_t lhsRowStride = stride[0] / sizeof(T);
             const size_t lhsColStride = stride[1] / sizeof(T);
-
             const size_t rhsRowStride = matrix.stride[0] / sizeof(T);
             const size_t rhsColStride = matrix.stride[1] / sizeof(T);
 
-            for (size_t i = 0; i < rows; ++i) {
-                T* const resRow = &result.m[i * result.cols]; 
+            const size_t totalOps = rows * matrix.cols * cols;
+            if (totalOps < core::config::PARALLEL_THRESHOLD_COMPLEX) {
+                for (size_t i = 0; i < rows; ++i) {
+                    T* const resRow = &result.m[i * result.cols]; 
 
-                for (size_t k = 0; k < cols; ++k) {
-                    const T factor = m[i * lhsRowStride + k * lhsColStride];
-        
-                    const T* const rhsRowPtr = &matrix.m[k * rhsRowStride];
+                    for (size_t k = 0; k < cols; ++k) {
+                        const T factor = m[i * lhsRowStride + k * lhsColStride];
+                        const T* const rhsRowPtr = &matrix.m[k * rhsRowStride];
 
-                    for (size_t j = 0; j < matrix.cols; ++j) {
-                        resRow[j] += factor * rhsRowPtr[j * rhsColStride];
+                        for (size_t j = 0; j < matrix.cols; ++j) {
+                            resRow[j] += factor * rhsRowPtr[j * rhsColStride];
+                        }
                     }
                 }
+                return result;
             }
+
+            core::getParallelExecutor().execute(*this, matrix,
+                [&result, lhsRowStride, lhsColStride, rhsRowStride, rhsColStride, this]
+                (const Matrix<T>& matA, const Matrix<T>& matB, unsigned int startR, unsigned int endR, unsigned int startC, unsigned int endC) {
+                    for (size_t i = startR; i < endR; i++) {
+                        T* const resRow = &result.m[i * result.cols];
+                
+                        for (size_t k = 0; k < matA.cols; k++) {
+                            const T factor = matA.m[i * lhsRowStride + k * lhsColStride];
+                            const T* const rhsRowPtr = &matB.m[k * rhsRowStride];
+
+                            for (size_t j = startC; j < endC; j++) {
+                                resRow[j] += factor * rhsRowPtr[j * rhsColStride];
+                            }
+                        }
+                    }
+                }
+            );
 
             return result;
         }
@@ -415,26 +460,48 @@ namespace BitMth::linalg{
                 "Matrix dimensions must match rows = cols"
             );
 
-            Matrix<T> result(matrixA.rows, matrixB.cols, targetArena);
+            Matrix<T> result(matrixA.rows, matrixB.cols, targetArena, true);
             const size_t aRowStride = matrixA.stride[0] / sizeof(T);
             const size_t aColStride = matrixA.stride[1] / sizeof(T);
-    
             const size_t bRowStride = matrixB.stride[0] / sizeof(T);
             const size_t bColStride = matrixB.stride[1] / sizeof(T);
 
-            for (size_t i = 0; i < matrixA.rows; ++i) {
-                T* const resRow = &result.m[i * matrixB.cols];
+            const size_t totalOps = matrixA.rows * matrixB.cols * matrixA.cols;
 
-                for (size_t k = 0; k < matrixA.cols; ++k) {
-                    const T factor = matrixA.m[i * aRowStride + k * aColStride];
-            
-                    const T* const bRowPtr = &matrixB.m[k * bRowStride];
+            if (totalOps < core::config::PARALLEL_THRESHOLD_COMPLEX) {
+                for (size_t i = 0; i < matrixA.rows; ++i) {
+                    T* const resRow = &result.m[i * result.cols];
 
-                    for (size_t j = 0; j < matrixB.cols; ++j) {
-                        resRow[j] += factor * bRowPtr[j * bColStride];
+                    for (size_t k = 0; k < matrixA.cols; ++k) {
+                        const T factor = matrixA.m[i * aRowStride + k * aColStride];
+                        const T* const bRowPtr = &matrixB.m[k * bRowStride];
+
+                        for (size_t j = 0; j < matrixB.cols; ++j) {
+                            resRow[j] += factor * bRowPtr[j * bColStride];
+                        }
                     }
                 }
+                return result;
             }
+
+            core::getParallelExecutor().execute(matrixA, matrixB,
+                [&result, aRowStride, aColStride, bRowStride, bColStride]
+                (const Matrix<T>& matA, const Matrix<T>& matB, unsigned int startR, unsigned int endR, unsigned int startC, unsigned int endC) {
+                    
+                    for (size_t i = startR; i < endR; ++i) {
+                        T* const resRow = &result.m[i * result.cols];
+
+                        for (size_t k = 0; k < matA.cols; ++k) {
+                            const T factor = matA.m[i * aRowStride + k * aColStride];
+                            const T* const bRowPtr = &matB.m[k * bRowStride];
+
+                            for (size_t j = startC; j < endC; ++j) {
+                                resRow[j] += factor * bRowPtr[j * bColStride];
+                            }
+                        }
+                    }
+                }
+            );
 
             return result;
         }
