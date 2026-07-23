@@ -15,6 +15,12 @@ namespace BitMth::core {
     std::atomic_bool done{true}; 
     unsigned int start{0};
     unsigned int end{0};
+
+    unsigned int rowStart{0};
+    unsigned int rowEnd{0};
+    unsigned int colStart{0};
+    unsigned int colEnd{0};
+    
     std::thread thr;
   };
 
@@ -23,6 +29,13 @@ namespace BitMth::core {
   struct TaskData{
     linalg::Matrix<T>& matrix;
     T scalar;
+    Op funct;
+  };
+
+  template<typename T, typename Op>
+  struct TaskDataM{
+    linalg::Matrix<T>& matrixA;
+    linalg::Matrix<T>& matrixB;
     Op funct;
   };
 }
