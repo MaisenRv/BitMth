@@ -50,5 +50,9 @@ namespace BitMth::core{
 
         size_t getCapacity() const noexcept { return capacity; }
         size_t getOffset()   const noexcept { return offset; }
+
+        constexpr static size_t KB(const size_t kb) noexcept { return (size_t)1024 * kb; }
+        constexpr static size_t MB(const size_t mb) noexcept { return 1024 * KB(mb); }
+        constexpr static size_t GB(const size_t gb) noexcept { return 1024 * MB(gb); }
     };
 }
