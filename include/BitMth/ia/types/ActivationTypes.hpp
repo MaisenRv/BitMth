@@ -1,5 +1,5 @@
 #pragma once
-#include "BitMth/core/Arena.hpp"
+
 #include <BitMth/linalg/Matrix.hpp>
 
 namespace BitMth::ia::types{
