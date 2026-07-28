@@ -77,8 +77,8 @@ namespace BitMth::ia{
     template<typename T>
     inline const ia::types::LossContent<T>& getLossFunction(const ia::types::LossFunctType type){
         static std::unordered_map<ia::types::LossFunctType, ia::types::LossContent<T>> functTable ={
-            {ia::types::LossFunctType::MSE,                  {Losses<T>::mse, Losses<T>::mseDerivate}},
-            {ia::types::LossFunctType::BINARY_CROSS_ENTROPY, {Losses<T>::bce, Losses<T>::bceDerivate}}
+            {ia::types::LossFunctType::MSE,                  {Losses<T>::mse, Losses<T>::mseDerivative}},
+            {ia::types::LossFunctType::BINARY_CROSS_ENTROPY, {Losses<T>::bce, Losses<T>::bceDerivative}}
         };
         return functTable[type];
     } 
