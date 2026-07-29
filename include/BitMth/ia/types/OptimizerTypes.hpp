@@ -12,9 +12,9 @@ namespace BitMth::ia::types{
 
   template<typename T>
   struct OptimizerState{
-    linalg::Matrix<T> firstMoment{nullptr};
-    linalg::Matrix<T> secondMoment{nullptr};
-    size_t stepCount = 0;
+    linalg::Matrix<T> firstMoment;
+    linalg::Matrix<T> secondMoment;
+    size_t stepCount{0};
   };
 
   template<typename T>
