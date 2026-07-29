@@ -18,7 +18,7 @@ namespace BitMth::ia{
       }
      
       static void sgdMomentum(Matrix &parameter,const Matrix &delta, T learningRate, types::OptimizerState<T> &state, T weightDecay = utils::WEIGHT_DECAY<T>){
-        if(state.firstMoment == nullptr){
+        if(state.stepCount == 0){
           state.firstMoment = Matrix(parameter.getRows(), parameter.getCols(), nullptr, true);
         }
 
@@ -33,10 +33,8 @@ namespace BitMth::ia{
       }
     
       static void adam(Matrix &parameter,const Matrix &delta, T learningRate, types::OptimizerState<T> &state, T weightDecay = utils::WEIGHT_DECAY<T>){
-        if(state.firstMoment == nullptr){
+        if(state.stepCount == 0){
           state.firstMoment = Matrix(parameter.getRows(), parameter.getCols(), nullptr, true);
-        }
-        if(state.secondMoment == nullptr){
           state.secondMoment = Matrix(parameter.getRows(), parameter.getCols(), nullptr, true);
         }
         state.stepCount++;
@@ -71,11 +69,9 @@ namespace BitMth::ia{
       }
 
       static void adamW(Matrix &parameter, const Matrix &delta,T learningRate, types::OptimizerState<T> &state, T weightDecay = utils::WEIGHT_DECAY<T>) {
-        if (state.firstMoment == nullptr) {
-            state.firstMoment = Matrix(parameter.getRows(), parameter.getCols(), nullptr, true);
-        }
-        if (state.secondMoment == nullptr) {
-            state.secondMoment = Matrix(parameter.getRows(), parameter.getCols(), nullptr, true);
+        if(state.stepCount == 0){
+          state.firstMoment = Matrix(parameter.getRows(), parameter.getCols(), nullptr, true);
+          state.secondMoment = Matrix(parameter.getRows(), parameter.getCols(), nullptr, true);
         }
 
         state.stepCount++;
