@@ -13,5 +13,12 @@ namespace BitMth::utils{
     inline constexpr T TWO_PI = PI<T> * static_cast<T>(2);
     template <typename T>
     inline constexpr T HALF_PI = PI<T> * static_cast<T>(0.5);
+
     
+    template <typename T>
+    inline constexpr T MOMENTUM_FACTOR = static_cast<T>(0.9);
+    template <typename T>
+    inline constexpr T MOMENTUM_FACTOR2 = static_cast<T>(0.999);
+    template <typename T>
+    inline constexpr T WEIGHT_DECAY = static_cast<T>(0.01);
 }
