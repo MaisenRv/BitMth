@@ -1,5 +1,6 @@
 #pragma once
 
+#include <climits>
 #include <cstddef>
 #include <cstdio>
 #include <iostream>
@@ -7,6 +8,7 @@
 #include <utility>
 #include <cstring>
 #include <iomanip>
+#include <vector>
 
 #include <BitMth/utils/Errors.hpp>
 #include <BitMth/utils/Constants.hpp>
@@ -20,12 +22,20 @@ namespace BitMth::linalg{
         Matrix(size_t rows, size_t cols, const size_t *customStrides, core::Arena* arena): Matrix(rows, cols, arena, false){
             stride[0] = customStrides[0];
             stride[1] = customStrides[1];
+            _updateStrideJumps();
         }
 
         size_t rows{0}, cols{0}, numElements{0};
         size_t stride[2]{};
         T *m{nullptr};
         core::Arena *arena{nullptr};
+
+        size_t rowJumpThis;
+        size_t colJumpThis;
+        void _updateStrideJumps(){
+            rowJumpThis = stride[0] / sizeof(T);
+            colJumpThis = stride[1] / sizeof(T);
+        }
     public:
         template< typename Op>
         static Matrix<T> scalarApplyFunction(const Matrix<T> &matrix,T scalar, core::Arena *arenaContainer, Op funct){
@@ -58,10 +68,10 @@ namespace BitMth::linalg{
         template< typename Op>
         static Matrix<T> matrixApplyFunction(const Matrix<T> &matrixA, const Matrix<T> &matrixB, core::Arena *arenaContainer, Op funct){
             Matrix<T> result(matrixA.rows, matrixA.cols, arenaContainer, false);
-            const size_t aJumpRow = matrixA.stride[0] / sizeof(T);
-            const size_t aJumpCol = matrixA.stride[1] / sizeof(T);
-            const size_t bJumpRow = matrixB.stride[0] / sizeof(T);
-            const size_t bJumpCol = matrixB.stride[1] / sizeof(T);
+            const size_t aJumpRow = matrixA.getRowJump();
+            const size_t aJumpCol = matrixA.getColJump();
+            const size_t bJumpRow = matrixB.getRowJump();
+            const size_t bJumpCol = matrixB.getColJump();
 
             if (matrixA.size() < core::config::PARALLEL_THRESHOLD_COMPLEX) {
                 for (size_t i = 0; i < matrixA.rows; i++) {
@@ -88,10 +98,10 @@ namespace BitMth::linalg{
 
         template< typename Op>
         Matrix<T>& matrixApplyFunctionInPlace(const Matrix<T>& matrix,Op funct) {
-            const size_t rowJumpThis = stride[0] / sizeof(T);
-            const size_t colJumpThis = stride[1] / sizeof(T);
-            const size_t rowJumpOther = matrix.stride[0] / sizeof(T);
-            const size_t colJumpOther = matrix.stride[1] / sizeof(T);
+            const size_t rowJumpThis = getRowJump();
+            const size_t colJumpThis = getColJump();
+            const size_t rowJumpOther = matrix.getRowJump();
+            const size_t colJumpOther = matrix.getColJump();
 
             if (size() < core::config::PARALLEL_THRESHOLD_COMPLEX) {
                 for (size_t i = 0; i < rows; i++) {
@@ -126,6 +136,7 @@ namespace BitMth::linalg{
             }
             stride[0] = cols * sizeof(T);
             stride[1] = sizeof(T);
+            _updateStrideJumps();
             if(initializeData){
                 clear(); 
             }
@@ -144,6 +155,7 @@ namespace BitMth::linalg{
             rows(inMatrix.rows), cols(inMatrix.cols),numElements(inMatrix.numElements), m(new T[numElements]){
                 stride[0] = inMatrix.stride[0];
                 stride[1] = inMatrix.stride[1];
+                _updateStrideJumps();
                 arena = nullptr;
                 std::memcpy(m,inMatrix.m,numElements * sizeof(T));
             }
@@ -158,8 +170,11 @@ namespace BitMth::linalg{
             rows(inMatrix.rows), cols(inMatrix.cols),numElements(inMatrix.numElements), m(inMatrix.m), arena(inMatrix.arena){
                 stride[0] = inMatrix.stride[0];
                 stride[1] = inMatrix.stride[1];
+                _updateStrideJumps();
                 inMatrix.stride[0] = 0;
                 inMatrix.stride[1] = 0;
+                inMatrix.rowJumpThis = 0;
+                inMatrix.colJumpThis = 0;
                 inMatrix.rows = 0;
                 inMatrix.cols = 0;
                 inMatrix.numElements = 0;
@@ -184,6 +199,7 @@ namespace BitMth::linalg{
             
             stride[0] = inMatrix.stride[0];
             stride[1] = inMatrix.stride[1];
+            _updateStrideJumps();
             std::memcpy(m, inMatrix.m, numElements * sizeof(T));
             return *this;
         }
@@ -200,6 +216,7 @@ namespace BitMth::linalg{
             m = inMatrix.m;
             stride[0] = inMatrix.stride[0];
             stride[1] = inMatrix.stride[1];
+            _updateStrideJumps();
 
             inMatrix.rows = 0;
             inMatrix.cols = 0;
@@ -208,6 +225,8 @@ namespace BitMth::linalg{
             inMatrix.arena = nullptr;
             inMatrix.stride[0] = 0;
             inMatrix.stride[1] = 0;
+            inMatrix.rowJumpThis = 0;
+            inMatrix.colJumpThis = 0;
 
             return *this;
         }
@@ -411,10 +430,10 @@ namespace BitMth::linalg{
             );
 
             Matrix<T> result(rows, matrix.cols, nullptr, true);
-            const size_t lhsRowStride = stride[0] / sizeof(T);
-            const size_t lhsColStride = stride[1] / sizeof(T);
-            const size_t rhsRowStride = matrix.stride[0] / sizeof(T);
-            const size_t rhsColStride = matrix.stride[1] / sizeof(T);
+            const size_t lhsRowStride = getRowJump();
+            const size_t lhsColStride = getColJump();
+            const size_t rhsRowStride = matrix.getRowJump();
+            const size_t rhsColStride = matrix.getColJump();
 
             const size_t totalOps = rows * matrix.cols * cols;
             if (totalOps < core::config::PARALLEL_THRESHOLD_COMPLEX) {
@@ -461,10 +480,10 @@ namespace BitMth::linalg{
             );
 
             Matrix<T> result(matrixA.rows, matrixB.cols, targetArena, true);
-            const size_t aRowStride = matrixA.stride[0] / sizeof(T);
-            const size_t aColStride = matrixA.stride[1] / sizeof(T);
-            const size_t bRowStride = matrixB.stride[0] / sizeof(T);
-            const size_t bColStride = matrixB.stride[1] / sizeof(T);
+            const size_t aRowStride = matrixA.getRowJump();
+            const size_t aColStride = matrixA.getColJump();
+            const size_t bRowStride = matrixB.getRowJump();
+            const size_t bColStride = matrixB.getColJump();
 
             const size_t totalOps = matrixA.rows * matrixB.cols * matrixA.cols;
 
@@ -526,6 +545,7 @@ namespace BitMth::linalg{
         Matrix& tInPlace(){
             std::swap(rows,cols);
             std::swap(stride[0],stride[1]);
+            _updateStrideJumps();
             return *this;
         } 
 
@@ -584,10 +604,9 @@ namespace BitMth::linalg{
 
         Matrix<T> reduceSumCols(core::Arena* targetArena = nullptr) const{
             Matrix<T> result(rows, 1, targetArena, true);
-            const size_t rowJump = stride[0] / sizeof(T);
 
             for (size_t i = 0; i < rows; i++){
-                const T* const currentRow = &m[i * rowJump];
+                const T* const currentRow = &m[i * rowJumpThis];
 
                 for (size_t j = 0; j < cols; j++){
                     result.m[i] += currentRow[j];  
@@ -597,10 +616,9 @@ namespace BitMth::linalg{
         }
         Matrix<T> reduceSumRows(core::Arena* targetArena = nullptr) const{
             Matrix<T> result(1, cols, targetArena, true);
-            const size_t rowJump = stride[0] / sizeof(T);
 
             for (size_t i = 0; i < rows; i++){
-                const T* const currentRow = &m[i * rowJump];
+                const T* const currentRow = &m[i * rowJumpThis];
                 for (size_t j = 0; j < cols; j++){
                     result.m[j] += currentRow[j];
                 }
@@ -620,11 +638,10 @@ namespace BitMth::linalg{
                 "Dimensions mismatch"
             );
             Matrix<T> result(rows, cols, stride, targetArena);
-            const size_t rowJump = stride[0] / sizeof(T);
-            const size_t resRowJump = result.stride[0] / sizeof(T);
+            const size_t resRowJump = result.getRowJump();
 
             for (size_t i = 0; i < rows; i++) {
-                const T* const currentRow = &m[i * rowJump];
+                const T* const currentRow = &m[i * rowJumpThis];
                 T* const resCurrentRow = &result.m[i * resRowJump];
 
                 for (size_t j = 0; j < cols; j++) {
@@ -645,9 +662,8 @@ namespace BitMth::linalg{
                 "Matrix dimensions must match (rows == cols)"
             );
             clear();
-            const size_t rowJump = stride[0] / sizeof(T);
             for(size_t i = 0; i < rows; i++){
-                T* const currentRow = &m[i * rowJump];
+                T* const currentRow = &m[i * rowJumpThis];
                 currentRow[i] = 1;
             }
         }
@@ -701,6 +717,26 @@ namespace BitMth::linalg{
             std::cout.flags(f); 
         }
 
+        Matrix<T> getRowsByIndices(const std::vector<size_t>& indices, size_t offset, size_t count) const {
+            size_t actualCount = std::min(count, indices.size() - offset);
+            Matrix batch(actualCount, cols, nullptr, false);
+
+            T* dest = batch.getValues();
+            const size_t bytesToCopy = stride[0];
+
+            for (size_t i = 0; i < actualCount; ++i) {
+                size_t originalRow = indices[offset + i];
+                const T* const rowThis = &m[originalRow * rowJumpThis];
+
+                std::memcpy(
+                    dest + (i * cols), 
+                    rowThis, 
+                    bytesToCopy
+                );
+            }
+            return batch;
+        }
+
         // GETTERS - SETTERS
         inline size_t             getRows()     const noexcept { return rows; }
         inline size_t             getCols()     const noexcept { return cols; }
@@ -709,5 +745,7 @@ namespace BitMth::linalg{
         inline const T*           getValues()   const noexcept { return m; }
         inline T*                 getValues()   noexcept       { return m; }
         inline size_t             size()        const noexcept { return numElements; }
+        inline const size_t       getRowJump()  const noexcept { return rowJumpThis; }
+        inline const size_t       getColJump()  const noexcept { return colJumpThis; }
     };
 }
