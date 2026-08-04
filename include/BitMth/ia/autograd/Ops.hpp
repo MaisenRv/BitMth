@@ -165,7 +165,7 @@ namespace BitMth::ia{
       return result;
     }
 
-    static inline Matrix relu(Matrix& Z,core::Arena *targetArena = nullptr ){
+    static inline Matrix relu(const Matrix& Z,core::Arena *targetArena = nullptr ){
       Matrix result = ActivationFunctions<T>::relu(Z, targetArena);
       ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
 
@@ -187,7 +187,7 @@ namespace BitMth::ia{
       return result;
     }
 
-    static inline Matrix sigmoid(Matrix& Z,core::Arena *targetArena = nullptr ){
+    static inline Matrix sigmoid(const Matrix& Z,core::Arena *targetArena = nullptr ){
       Matrix result = ActivationFunctions<T>::sigmoid(Z, targetArena);
       ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
 
@@ -209,7 +209,7 @@ namespace BitMth::ia{
       return result;
     }
 
-    static inline Matrix tanH(Matrix& Z,core::Arena *targetArena = nullptr ){
+    static inline Matrix tanH(const Matrix& Z,core::Arena *targetArena = nullptr ){
       Matrix result = ActivationFunctions<T>::Tanh(Z, targetArena);
       ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
 
@@ -231,7 +231,7 @@ namespace BitMth::ia{
       return result;
     }
 
-    static inline Matrix softmax(Matrix& Z, core::Arena* targetArena = nullptr) {
+    static inline Matrix softmax(const Matrix& Z, core::Arena* targetArena = nullptr) {
         Matrix result = ActivationFunctions<T>::softmax(Z, targetArena);
 
         ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
@@ -257,7 +257,7 @@ namespace BitMth::ia{
         return result;
     }
 
-    static Matrix mse(Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr) {
+    static Matrix mse(const Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr) {
         T lossVal = LossFunctions<T>::mse(predict, real, targetArena);
         Matrix lossMatrix(1, 1, targetArena);
         lossMatrix(0, 0) = lossVal;
@@ -282,7 +282,7 @@ namespace BitMth::ia{
         return lossMatrix;
     }
 
-    static Matrix bce(Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr) {
+    static Matrix bce(const Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr) {
         T lossVal = LossFunctions<T>::bce(predict, real, targetArena);
         Matrix lossMatrix(1, 1, targetArena);
         lossMatrix(0, 0) = lossVal;
