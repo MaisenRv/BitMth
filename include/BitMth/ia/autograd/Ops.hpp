@@ -4,6 +4,7 @@
 #include <BitMth/ia/autograd/ComputationGraph.hpp>
 #include <BitMth/ia/autograd/types/OpTypes.hpp>
 #include <BitMth/ia/ActivationFunctions.hpp>
+#include <BitMth/ia/LossFunctions.hpp>
 
 namespace BitMth::ia{
   template<typename T>
@@ -247,16 +248,60 @@ namespace BitMth::ia{
                         self->grad, 
                         targetArena
                     );
-
                     nodeZ->grad += dZ;
                 }
             };
-
             result.setRequiresGrad(true);
             result.setAutogradNode(nodeResult);
         }
         return result;
     }
 
+    static Matrix mse(Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr) {
+        T lossVal = LossFunctions<T>::mse(predict, real, targetArena);
+        Matrix lossMatrix(1, 1, targetArena);
+        lossMatrix(0, 0) = lossVal;
+
+        ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
+        if (graph != nullptr && predict.getRequiresGrad()) {
+            
+            Node<Matrix>* nodeLoss = _createUnaryNodeHelper(predict, lossMatrix, graph, types::OpType::MSE_LOSS);
+
+            nodeLoss->backward_fn = [&predict, &real, targetArena](Node<Matrix>* self) {
+                Node<Matrix>* nodePred = self->parents[0];
+
+                if (nodePred != nullptr) {
+                    Matrix gradMatrix = LossFunctions<T>::mseDerivative(predict, real, targetArena);
+                    nodePred->grad += gradMatrix;
+                }
+            };
+            lossMatrix.setRequiresGrad(true);
+            lossMatrix.setAutogradNode(nodeLoss);
+        }
+
+        return lossMatrix;
+    }
+
+    static Matrix bce(Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr) {
+        T lossVal = LossFunctions<T>::bce(predict, real, targetArena);
+        Matrix lossMatrix(1, 1, targetArena);
+        lossMatrix(0, 0) = lossVal;
+
+        ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
+        if (graph != nullptr && predict.getRequiresGrad()) {
+            Node<Matrix>* nodeLoss = _createUnaryNodeHelper(predict, lossMatrix, graph, types::OpType::BCE_LOSS);
+            nodeLoss->backward_fn = [&predict, &real, targetArena](Node<Matrix>* self) {
+                Node<Matrix>* nodePred = self->parents[0];
+
+                if (nodePred != nullptr) {
+                    Matrix gradMatrix = LossFunctions<T>::bceDerivative(predict, real, targetArena);
+                    nodePred->grad += gradMatrix;
+                }
+            };
+            lossMatrix.setRequiresGrad(true);
+            lossMatrix.setAutogradNode(nodeLoss);
+        }
+        return lossMatrix;
+    }
   };
 }

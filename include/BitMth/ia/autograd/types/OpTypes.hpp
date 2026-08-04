@@ -22,6 +22,10 @@ namespace BitMth::ia::types{
     SOFTMAX,
     // LAYERNORM,
 
+    // === LOSSES ===
+    MSE_LOSS,
+    BCE_LOSS    
+
     // === SHAPE & TRANSFORMATIONS ===
     // TRANSPOSE,
     // RESHAPE
