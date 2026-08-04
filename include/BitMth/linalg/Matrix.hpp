@@ -14,6 +14,7 @@
 #include <BitMth/utils/Constants.hpp>
 #include <BitMth/core/Arena.hpp>
 #include <BitMth/core/ParallelExecutor.hpp>
+#include <BitMth/ia/autograd/Node.hpp>
 
 namespace BitMth::linalg{
     template <typename T>
@@ -29,6 +30,8 @@ namespace BitMth::linalg{
         size_t stride[2]{};
         T *m{nullptr};
         core::Arena *arena{nullptr};
+        ia::Node<Matrix<T>>* autogradNode{nullptr};
+        bool requiresGrad{false};
 
         size_t rowJumpThis;
         size_t colJumpThis;
@@ -137,6 +140,7 @@ namespace BitMth::linalg{
             stride[0] = cols * sizeof(T);
             stride[1] = sizeof(T);
             _updateStrideJumps();
+            autogradNode->conteiner = this;
             if(initializeData){
                 clear(); 
             }
@@ -157,6 +161,8 @@ namespace BitMth::linalg{
                 stride[1] = inMatrix.stride[1];
                 _updateStrideJumps();
                 arena = nullptr;
+                autogradNode = nullptr;
+                requiresGrad = inMatrix.requiresGrad;
                 std::memcpy(m,inMatrix.m,numElements * sizeof(T));
             }
 
@@ -170,6 +176,10 @@ namespace BitMth::linalg{
             rows(inMatrix.rows), cols(inMatrix.cols),numElements(inMatrix.numElements), m(inMatrix.m), arena(inMatrix.arena){
                 stride[0] = inMatrix.stride[0];
                 stride[1] = inMatrix.stride[1];
+                autogradNode = inMatrix.autogradNode;
+                if(autogradNode != nullptr){
+                    autogradNode->container = this; 
+                }
                 _updateStrideJumps();
                 inMatrix.stride[0] = 0;
                 inMatrix.stride[1] = 0;
@@ -200,6 +210,7 @@ namespace BitMth::linalg{
             stride[0] = inMatrix.stride[0];
             stride[1] = inMatrix.stride[1];
             _updateStrideJumps();
+            autogradNode = nullptr;
             std::memcpy(m, inMatrix.m, numElements * sizeof(T));
             return *this;
         }
@@ -212,6 +223,10 @@ namespace BitMth::linalg{
             arena = inMatrix.arena;
             rows = inMatrix.rows;
             cols = inMatrix.cols;
+            autogradNode = inMatrix.autogradNode;
+            if(autogradNode != nullptr){
+                autogradNode->container = this; 
+            }
             numElements = inMatrix.numElements;
             m = inMatrix.m;
             stride[0] = inMatrix.stride[0];
@@ -227,6 +242,7 @@ namespace BitMth::linalg{
             inMatrix.stride[1] = 0;
             inMatrix.rowJumpThis = 0;
             inMatrix.colJumpThis = 0;
+            inMatrix.autogradNode = nullptr;
 
             return *this;
         }
@@ -738,14 +754,20 @@ namespace BitMth::linalg{
         }
 
         // GETTERS - SETTERS
-        inline size_t             getRows()     const noexcept { return rows; }
-        inline size_t             getCols()     const noexcept { return cols; }
-        inline const size_t*      getStrides()  const noexcept { return stride; }
-        inline const core::Arena* getArena()    const noexcept { return arena; }
-        inline const T*           getValues()   const noexcept { return m; }
-        inline T*                 getValues()   noexcept       { return m; }
-        inline size_t             size()        const noexcept { return numElements; }
-        inline const size_t       getRowJump()  const noexcept { return rowJumpThis; }
-        inline const size_t       getColJump()  const noexcept { return colJumpThis; }
+        inline size_t               getRows()     const noexcept { return rows; }
+        inline size_t               getCols()     const noexcept { return cols; }
+        inline const size_t*        getStrides()  const noexcept { return stride; }
+        inline const core::Arena*   getArena()    const noexcept { return arena; }
+        inline const T*             getValues()   const noexcept { return m; }
+        inline T*                   getValues()   noexcept       { return m; }
+        inline size_t               size()        const noexcept { return numElements; }
+        inline const size_t         getRowJump()  const noexcept { return rowJumpThis; }
+        inline const size_t         getColJump()  const noexcept { return colJumpThis; }
+
+        inline ia::Node<Matrix<T>>* getAutogradNode() const noexcept           { return autogradNode; }
+        inline void                 setAutogradNode(ia::Node<Matrix<T>>* node) { autogradNode = node; }  
+        inline void                 setRequiresGrad(bool req) noexcept         { requiresGrad = req; }
+        inline bool                 getRequiresGrad() const noexcept           {return (requiresGrad || (autogradNode != nullptr && autogradNode->requiresGrad)); }
+
     };
 }
