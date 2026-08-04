@@ -14,7 +14,7 @@ namespace BitMth::ia{
                 {ia::types::ActivationFunctType::TANH,    {Ops<T>::tanH, nullptr}},
                 {ia::types::ActivationFunctType::SOFTMAX, {Ops<T>::softmax, nullptr}}
             };
-            return functTable.act(type);
+            return functTable.at(type);
         }
         static std::unordered_map<ia::types::ActivationFunctType, ia::types::ActivationContent<T>> functTable ={
             {ia::types::ActivationFunctType::RELU,    {ActivationFunctions<T>::relu, ActivationFunctions<T>::reluDerivative}},
