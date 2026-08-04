@@ -140,7 +140,6 @@ namespace BitMth::linalg{
             stride[0] = cols * sizeof(T);
             stride[1] = sizeof(T);
             _updateStrideJumps();
-            autogradNode->containeri = this;
             if(initializeData){
                 clear(); 
             }
