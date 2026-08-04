@@ -32,7 +32,7 @@ namespace BitMth::ia{
       void _makeActive() { activeGraph = this; }
       void _deactivate() { activeGraph = nullptr; }
 
-      static ComputationGraph<T>& getComputationGraph(){return activeGraph;}
+      static ComputationGraph<T>* getComputationGraph(){return activeGraph;}
       static bool isCreateGraph(){ return activeGraph != nullptr; }
   };
 
