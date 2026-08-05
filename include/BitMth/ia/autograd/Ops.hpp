@@ -14,11 +14,14 @@ namespace BitMth::ia{
       using Matrix = linalg::Matrix<T>;
 
       static Node<Matrix>* _getOrCreateNode(ComputationGraph<Matrix>* graph, Matrix& matrix, core::Arena *arena){
-        if(!matrix.getRequiresGrad())           return nullptr;
-        if(matrix.getAutogradNode() != nullptr) return matrix.getAutogradNode();
+        if (matrix.getAutogradNode() != nullptr) {
+            auto* node = matrix.getAutogradNode();
+            node->container = &matrix;
+            return node;
+        }
 
         Node<Matrix>* node = graph->createNode();
-        node->requiresGrad = true;
+        node->requiresGrad = matrix.getRequiresGrad();
         node->container = &matrix;
         node->grad = Matrix(matrix.getRows(),matrix.getCols(),arena);
         matrix.setAutogradNode(node);
@@ -142,33 +145,39 @@ namespace BitMth::ia{
       Matrix result = Matrix::mul(A, B, targetArena);
       ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
 
-      if(graph == nullptr) return result;
+      if (graph == nullptr) return result;
 
-      if(A.getRequiresGrad() || B.getRequiresGrad()){
+      if (A.getRequiresGrad() || B.getRequiresGrad()) {
+          Node<Matrix>* nodeA = _getOrCreateNode(graph, A, targetArena);
+          Node<Matrix>* nodeB = _getOrCreateNode(graph, B, targetArena);
 
-          Node<Matrix>* nodeResult = _createNodeHelper(A, B,result,targetArena, graph, types::OpType::MUL);
-          nodeResult->backward_fn = [targetArena](Node<Matrix>* self){
-            Node<Matrix>* nodeA = self->parents[0];
-            Node<Matrix>* nodeB = self->parents[1];
-            if(nodeA != nullptr){
-              nodeA->grad += Matrix::mul(
-                self->grad,
-                Matrix::t(*nodeB->container,targetArena),
-                targetArena
-              );
-            }
-            if(nodeB != nullptr){
-              nodeB->grad += Matrix::mul(
-                Matrix::t(*nodeA->container,targetArena),
-                self->grad,
-                targetArena
-              );
-            }
-          };
+          Node<Matrix>* nodeResult = graph->createNode();
+          nodeResult->requiresGrad = true;
+          nodeResult->parents = {nodeA, nodeB};
+          nodeResult->operation = types::OpType::MUL;
+          
           result.setRequiresGrad(true);
           result.setAutogradNode(nodeResult);
+          nodeResult->container = nullptr;
+          nodeResult->grad = Matrix(result.getRows(), result.getCols(), targetArena);
+          nodeResult->grad.fill(0);
+
+          Matrix* ptrA = &A;
+          Matrix* ptrB = &B;
+
+          nodeResult->backward_fn = [nodeA, nodeB, ptrA, ptrB, targetArena](Node<Matrix>* self) {
+            if (nodeA != nullptr && nodeA->requiresGrad) {
+              Matrix bT = Matrix::t(*ptrB, targetArena);
+              nodeA->grad += Matrix::mul(self->grad, bT, targetArena);
+            }
+            if (nodeB != nullptr && nodeB->requiresGrad) {
+              Matrix aT = Matrix::t(*ptrA, targetArena);
+              nodeB->grad += Matrix::mul(aT, self->grad, targetArena);
+            }
+          };
       }
       return result;
+
     }
 
     static inline Matrix relu(const Matrix& Z,core::Arena *targetArena = nullptr ){
@@ -264,46 +273,65 @@ namespace BitMth::ia{
     }
 
     static Matrix mse(const Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr) {
-        Matrix lossMatrix = LossFunctions<T>::mse(predict, real, targetArena);
+      Matrix lossMatrix = LossFunctions<T>::mse(predict, real, targetArena);
 
-        ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
-        if (graph != nullptr && predict.getRequiresGrad()) {
-            
-            Node<Matrix>* nodeLoss = _createUnaryNodeHelper(predict, lossMatrix,targetArena, graph, types::OpType::MSE_LOSS);
+      ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
+      if (graph != nullptr && predict.getRequiresGrad()) {
+          Matrix& nonConstPred = const_cast<Matrix&>(predict);
+          Node<Matrix>* nodePred = _getOrCreateNode(graph, nonConstPred, targetArena);
 
-            nodeLoss->backward_fn = [&predict, &real, targetArena](Node<Matrix>* self) {
-                Node<Matrix>* nodePred = self->parents[0];
+          Node<Matrix>* nodeLoss = graph->createNode();
+          nodeLoss->requiresGrad = true;
+          nodeLoss->parents = {nodePred};
+          nodeLoss->operation = types::OpType::MSE_LOSS;
+          nodeLoss->grad = Matrix(lossMatrix.getRows(), lossMatrix.getCols(), targetArena);
+          nodeLoss->grad.fill(0);
 
-                if (nodePred != nullptr) {
-                    Matrix gradMatrix = LossFunctions<T>::mseDerivative(predict, real, targetArena);
-                    nodePred->grad += gradMatrix;
-                }
-            };
-            lossMatrix.setRequiresGrad(true);
-            lossMatrix.setAutogradNode(nodeLoss);
-        }
+          lossMatrix.setRequiresGrad(true);
+          lossMatrix.setAutogradNode(nodeLoss);
 
-        return lossMatrix;
+          nodeLoss->backward_fn = [nonConstPred, real, targetArena](Node<Matrix>* self) {
+              Node<Matrix>* nodeP = self->parents[0];
+              if (nodeP != nullptr && nodeP->requiresGrad) {
+                  Matrix gradMatrix = LossFunctions<T>::mseDerivative(nonConstPred, real, targetArena);
+                  nodeP->grad += gradMatrix;
+              }
+          };
+      }
+
+      return lossMatrix;
+
     }
 
     static Matrix bce(const Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr) {
-        Matrix lossMatrix = LossFunctions<T>::bce(predict, real, targetArena);
-        
-        ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
-        if (graph != nullptr && predict.getRequiresGrad()) {
-            Node<Matrix>* nodeLoss = _createUnaryNodeHelper(predict, lossMatrix,targetArena, graph, types::OpType::BCE_LOSS);
-            nodeLoss->backward_fn = [&predict, &real, targetArena](Node<Matrix>* self) {
-                Node<Matrix>* nodePred = self->parents[0];
+      Matrix lossMatrix = LossFunctions<T>::bce(predict, real, targetArena);
 
-                if (nodePred != nullptr) {
-                    Matrix gradMatrix = LossFunctions<T>::bceDerivative(predict, real, targetArena);
-                    nodePred->grad += gradMatrix;
-                }
-            };
-            lossMatrix.setRequiresGrad(true);
-            lossMatrix.setAutogradNode(nodeLoss);
-        }
-        return lossMatrix;
+      ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
+      if (graph != nullptr && predict.getRequiresGrad()) {
+          Matrix& nonConstPred = const_cast<Matrix&>(predict);
+          Node<Matrix>* nodePred = _getOrCreateNode(graph, nonConstPred, targetArena);
+
+          Node<Matrix>* nodeLoss = graph->createNode();
+          nodeLoss->requiresGrad = true;
+          nodeLoss->parents = {nodePred};
+          nodeLoss->operation = types::OpType::BCE_LOSS;
+        
+          nodeLoss->grad = Matrix(lossMatrix.getRows(), lossMatrix.getCols(), targetArena);
+          nodeLoss->grad.fill(0);
+
+          lossMatrix.setRequiresGrad(true);
+          lossMatrix.setAutogradNode(nodeLoss);
+
+          nodeLoss->backward_fn = [predict, real, targetArena](Node<Matrix>* self) {
+              Node<Matrix>* nodeP = self->parents[0];
+              if (nodeP != nullptr && nodeP->requiresGrad) {
+                  Matrix gradMatrix = LossFunctions<T>::bceDerivative(predict, real, targetArena);
+                  nodeP->grad += gradMatrix;
+              }
+          };
+      }
+      return lossMatrix;
+
     }
   };
 }
