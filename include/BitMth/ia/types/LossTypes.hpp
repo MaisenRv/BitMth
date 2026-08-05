@@ -11,7 +11,10 @@ namespace BitMth::ia::types{
 
     template<typename T>
     struct LossContent {
-      T (* lossFunct)(const linalg::Matrix<T>&, const linalg::Matrix<T>&, core::Arena*);
-      linalg::Matrix<T> (* lossFunctDev)(const linalg::Matrix<T>&, const linalg::Matrix<T>&, core::Arena* );
+    private:
+        using Matrix = linalg::Matrix<T>;
+    public:
+      T (* lossFunct)(const Matrix&, const Matrix&, core::Arena*);
+      Matrix  (* lossFunctDev)(const Matrix&, const Matrix&, core::Arena* );
     };
 }

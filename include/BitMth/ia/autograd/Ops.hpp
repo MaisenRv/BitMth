@@ -34,7 +34,7 @@ namespace BitMth::ia{
         nodeResult->container = &out;
         return nodeResult;
       }
-      static Node<Matrix>* _createUnaryNodeHelper(Matrix& in, Matrix& out, ComputationGraph<Matrix>* graph, types::OpType type){
+      static Node<Matrix>* _createUnaryNodeHelper(const Matrix& in, Matrix& out, ComputationGraph<Matrix>* graph, types::OpType type){
         Node<Matrix>* nodeIn = _getOrCreateNode(graph, in);
 
         Node<Matrix>* nodeResult = graph->createNode();
@@ -210,7 +210,7 @@ namespace BitMth::ia{
     }
 
     static inline Matrix tanH(const Matrix& Z,core::Arena *targetArena = nullptr ){
-      Matrix result = ActivationFunctions<T>::Tanh(Z, targetArena);
+      Matrix result = ActivationFunctions<T>::tanh(Z, targetArena);
       ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
 
       if(graph == nullptr) return result;
@@ -221,7 +221,7 @@ namespace BitMth::ia{
           nodeResult->backward_fn = [targetArena](Node<Matrix>* self){
             Node<Matrix>* nodeZ = self->parents[0];
             if(nodeZ != nullptr){
-              Matrix dA = ActivationFunctions<T>::TanhDerivative(*nodeZ->container, *self->container,targetArena);
+              Matrix dA = ActivationFunctions<T>::tanhDerivative(*nodeZ->container, *self->container,targetArena);
               nodeZ->grad += Ops<T>::hadamard(self->grad, dA, targetArena);
             }
           };
