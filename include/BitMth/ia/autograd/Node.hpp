@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <functional>
 
 #include <BitMth/ia/autograd/types/OpTypes.hpp>
 
@@ -12,6 +13,6 @@ namespace BitMth::ia{
     std::vector<Node<T>*> parents;
     bool requiresGrad{false};
     types::OpType operation{types::OpType::NONE};
-    void (*backward_fn)(Node<T>* self){nullptr};
+    std::function<void(Node<T>*)> backward_fn{nullptr};
   };
 }
