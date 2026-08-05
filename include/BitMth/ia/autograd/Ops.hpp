@@ -149,13 +149,15 @@ namespace BitMth::ia{
             if(nodeA != nullptr){
               nodeA->grad += Matrix::mul(
                 self->grad,
-                Matrix::t(*nodeB->container,targetArena)
+                Matrix::t(*nodeB->container,targetArena),
+                targetArena
               );
             }
             if(nodeB != nullptr){
               nodeB->grad += Matrix::mul(
                 Matrix::t(*nodeA->container,targetArena),
-                self->grad
+                self->grad,
+                targetArena
               );
             }
           };
@@ -265,11 +267,11 @@ namespace BitMth::ia{
             
             Node<Matrix>* nodeLoss = _createUnaryNodeHelper(predict, lossMatrix, graph, types::OpType::MSE_LOSS);
 
-            nodeLoss->backward_fn = [real, targetArena](Node<Matrix>* self) {
+            nodeLoss->backward_fn = [&predict, &real, targetArena](Node<Matrix>* self) {
                 Node<Matrix>* nodePred = self->parents[0];
 
-                if (nodePred != nullptr && nodePred->container != nullptr) {
-                    Matrix gradMatrix = LossFunctions<T>::mseDerivative(*nodePred->container, real, targetArena);
+                if (nodePred != nullptr) {
+                    Matrix gradMatrix = LossFunctions<T>::mseDerivative(predict, real, targetArena);
                     nodePred->grad += gradMatrix;
                 }
             };
@@ -286,11 +288,11 @@ namespace BitMth::ia{
         ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
         if (graph != nullptr && predict.getRequiresGrad()) {
             Node<Matrix>* nodeLoss = _createUnaryNodeHelper(predict, lossMatrix, graph, types::OpType::BCE_LOSS);
-            nodeLoss->backward_fn = [real, targetArena](Node<Matrix>* self) {
+            nodeLoss->backward_fn = [&predict, &real, targetArena](Node<Matrix>* self) {
                 Node<Matrix>* nodePred = self->parents[0];
 
-                if (nodePred != nullptr && nodePred->container != nullptr) {
-                    Matrix gradMatrix = LossFunctions<T>::bceDerivative(*nodePred->container, real, targetArena);
+                if (nodePred != nullptr) {
+                    Matrix gradMatrix = LossFunctions<T>::bceDerivative(predict, real, targetArena);
                     nodePred->grad += gradMatrix;
                 }
             };
