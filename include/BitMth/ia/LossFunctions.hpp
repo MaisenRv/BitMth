@@ -11,8 +11,13 @@ namespace BitMth::ia{
     struct [[nodiscard]] LossFunctions{
       private:
         using Matrix = linalg::Matrix<T>;
+        static Matrix _helperMatrix(T val, core::Arena* arena) {
+            Matrix m(1, 1, arena);
+            m(0, 0) = val;
+            return m;
+        }
       public:
-        static T mse(const Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr){
+        static Matrix mse(const Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr){
             CHECK_ERROR_MATRIX(
                 predict.getRows() != real.getRows() || predict.getCols() != real.getCols(),
                 "Loss function (MSE)",
@@ -24,7 +29,7 @@ namespace BitMth::ia{
                     return diff * diff;
                 }
             );
-            return lossMatrix.reduceSumTotal() / static_cast<T>(real.size());
+            return _helperMatrix(lossMatrix.reduceSumTotal() / static_cast<T>(real.size()),targetArena);
         }
 
         static Matrix mseDerivative(const Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr){
@@ -42,7 +47,7 @@ namespace BitMth::ia{
             );
         }
 
-        static T bce(const Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr) {
+        static Matrix bce(const Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr) {
             CHECK_ERROR_MATRIX(
                 predict.getRows() != real.getRows() || predict.getCols() != real.getCols(),
                 "Loss function (BCE)",
@@ -54,7 +59,7 @@ namespace BitMth::ia{
                     T y_pred = std::clamp(mA, utils::EPSILON<T>, one - utils::EPSILON<T>);
                     return  mB * std::log(y_pred) + (one - mB) * std::log(one - y_pred);
             });
-            return (-lossMatrix.reduceSumTotal()) / T(real.size());
+            return _helperMatrix((-lossMatrix.reduceSumTotal()) / T(real.size()),targetArena);
         }
 
         static Matrix bceDerivative(const Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr) {

@@ -12,7 +12,7 @@ namespace BitMth::ia{
     private:
       using Matrix = linalg::Matrix<T>;
 
-      static Node<Matrix>* _getOrCreateNode(ComputationGraph<Matrix>* graph,Matrix& matrix){
+      static Node<Matrix>* _getOrCreateNode(ComputationGraph<Matrix>* graph, const Matrix& matrix){
         if(!matrix.getRequiresGrad())           return nullptr;
         if(matrix.getAutogradNode() != nullptr) return matrix.getAutogradNode();
 

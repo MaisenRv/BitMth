@@ -14,7 +14,7 @@ namespace BitMth::ia::types{
     private:
         using Matrix = linalg::Matrix<T>;
     public:
-      T (* lossFunct)(const Matrix&, const Matrix&, core::Arena*);
+      Matrix (* lossFunct)(const Matrix&, const Matrix&, core::Arena*);
       Matrix  (* lossFunctDev)(const Matrix&, const Matrix&, core::Arena* );
     };
 }
