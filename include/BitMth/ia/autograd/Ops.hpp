@@ -1,5 +1,6 @@
 #pragma once
 
+#include "BitMth/core/Arena.hpp"
 #include <BitMth/ia/autograd/Node.hpp>
 #include <BitMth/ia/autograd/ComputationGraph.hpp>
 #include <BitMth/ia/autograd/types/OpTypes.hpp>
@@ -12,36 +13,39 @@ namespace BitMth::ia{
     private:
       using Matrix = linalg::Matrix<T>;
 
-      static Node<Matrix>* _getOrCreateNode(ComputationGraph<Matrix>* graph, Matrix& matrix){
+      static Node<Matrix>* _getOrCreateNode(ComputationGraph<Matrix>* graph, Matrix& matrix, core::Arena *arena){
         if(!matrix.getRequiresGrad())           return nullptr;
         if(matrix.getAutogradNode() != nullptr) return matrix.getAutogradNode();
 
         Node<Matrix>* node = graph->createNode();
         node->requiresGrad = true;
         node->container = &matrix;
+        node->grad = Matrix(matrix.getRows(),matrix.getCols(),arena);
         matrix.setAutogradNode(node);
         return node;
       }
 
-      static Node<Matrix>* _createNodeHelper(Matrix& A,Matrix& B,Matrix& out, ComputationGraph<Matrix>* graph, types::OpType type){
-        Node<Matrix>* nodeA = _getOrCreateNode(graph, A);
-        Node<Matrix>* nodeB = _getOrCreateNode(graph, B);
+      static Node<Matrix>* _createNodeHelper(Matrix& A,Matrix& B,Matrix& out,core::Arena *arena, ComputationGraph<Matrix>* graph, types::OpType type){
+        Node<Matrix>* nodeA = _getOrCreateNode(graph, A, arena);
+        Node<Matrix>* nodeB = _getOrCreateNode(graph, B, arena);
 
         Node<Matrix>* nodeResult = graph->createNode();
         nodeResult->requiresGrad = true;
         nodeResult->parents = {nodeA, nodeB};
         nodeResult->operation = type;
         nodeResult->container = &out;
+        nodeResult->grad = Matrix(out.getRows(),out.getCols(),arena);
         return nodeResult;
       }
-      static Node<Matrix>* _createUnaryNodeHelper(const Matrix& in, Matrix& out, ComputationGraph<Matrix>* graph, types::OpType type){
-        Node<Matrix>* nodeIn = _getOrCreateNode(graph, const_cast<Matrix&>(in));
+      static Node<Matrix>* _createUnaryNodeHelper(const Matrix& in, Matrix& out,core::Arena *arena, ComputationGraph<Matrix>* graph, types::OpType type){
+        Node<Matrix>* nodeIn = _getOrCreateNode(graph, const_cast<Matrix&>(in),arena);
 
         Node<Matrix>* nodeResult = graph->createNode();
         nodeResult->requiresGrad = true;
         nodeResult->parents = {nodeIn};
         nodeResult->operation = type;
         nodeResult->container = &out;
+        nodeResult->grad = Matrix(out.getRows(),out.getCols(),arena);
         return nodeResult;
       }
     public:
@@ -59,7 +63,7 @@ namespace BitMth::ia{
         if (graph == nullptr) return result;
 
         if (A.getRequiresGrad() || B.getRequiresGrad()) {
-            Node<Matrix>* nodeResult = _createNodeHelper(A, B, result, graph, types::OpType::ADD);
+            Node<Matrix>* nodeResult = _createNodeHelper(A, B, result,targetArena, graph, types::OpType::ADD);
             nodeResult->backward_fn = [isRowVectorBias, targetArena](Node<Matrix>* self) {
                 Node<Matrix>* nodeA = self->parents[0];
                 Node<Matrix>* nodeB = self->parents[1];
@@ -92,7 +96,7 @@ namespace BitMth::ia{
 
       if(A.getRequiresGrad() || B.getRequiresGrad()){
 
-          Node<Matrix>* nodeResult = _createNodeHelper(A, B,result, graph, types::OpType::SUB);
+          Node<Matrix>* nodeResult = _createNodeHelper(A, B,result,targetArena, graph, types::OpType::SUB);
           nodeResult->backward_fn = [](Node<Matrix>* self){
             Node<Matrix>* nodeA = self->parents[0];
             Node<Matrix>* nodeB = self->parents[1];
@@ -117,7 +121,7 @@ namespace BitMth::ia{
 
       if(A.getRequiresGrad() || B.getRequiresGrad()){
 
-          Node<Matrix>* nodeResult = _createNodeHelper(A, B,result, graph, types::OpType::HADAMARD);
+          Node<Matrix>* nodeResult = _createNodeHelper(A, B,result,targetArena, graph, types::OpType::HADAMARD);
           nodeResult->backward_fn = [targetArena](Node<Matrix>* self){
             Node<Matrix>* nodeA = self->parents[0];
             Node<Matrix>* nodeB = self->parents[1];
@@ -142,7 +146,7 @@ namespace BitMth::ia{
 
       if(A.getRequiresGrad() || B.getRequiresGrad()){
 
-          Node<Matrix>* nodeResult = _createNodeHelper(A, B,result, graph, types::OpType::MUL);
+          Node<Matrix>* nodeResult = _createNodeHelper(A, B,result,targetArena, graph, types::OpType::MUL);
           nodeResult->backward_fn = [targetArena](Node<Matrix>* self){
             Node<Matrix>* nodeA = self->parents[0];
             Node<Matrix>* nodeB = self->parents[1];
@@ -175,7 +179,7 @@ namespace BitMth::ia{
 
       if(Z.getRequiresGrad()){
 
-          Node<Matrix>* nodeResult = _createUnaryNodeHelper(Z, result, graph, types::OpType::RELU);
+          Node<Matrix>* nodeResult = _createUnaryNodeHelper(Z, result,targetArena, graph, types::OpType::RELU);
           nodeResult->backward_fn = [targetArena](Node<Matrix>* self){
             Node<Matrix>* nodeZ = self->parents[0];
             if(nodeZ != nullptr){
@@ -197,7 +201,7 @@ namespace BitMth::ia{
 
       if(Z.getRequiresGrad()){
 
-          Node<Matrix>* nodeResult = _createUnaryNodeHelper(Z, result, graph, types::OpType::SIGMOID);
+          Node<Matrix>* nodeResult = _createUnaryNodeHelper(Z, result,targetArena, graph, types::OpType::SIGMOID);
           nodeResult->backward_fn = [targetArena](Node<Matrix>* self){
             Node<Matrix>* nodeZ = self->parents[0];
             if(nodeZ != nullptr){
@@ -219,7 +223,7 @@ namespace BitMth::ia{
 
       if(Z.getRequiresGrad()){
 
-          Node<Matrix>* nodeResult = _createUnaryNodeHelper(Z, result, graph, types::OpType::TANH);
+          Node<Matrix>* nodeResult = _createUnaryNodeHelper(Z, result,targetArena, graph, types::OpType::TANH);
           nodeResult->backward_fn = [targetArena](Node<Matrix>* self){
             Node<Matrix>* nodeZ = self->parents[0];
             if(nodeZ != nullptr){
@@ -240,7 +244,7 @@ namespace BitMth::ia{
         if (graph == nullptr) return result;
 
         if (Z.getRequiresGrad()) {
-            Node<Matrix>* nodeResult = _createUnaryNodeHelper(Z, result, graph, types::OpType::SOFTMAX);
+            Node<Matrix>* nodeResult = _createUnaryNodeHelper(Z, result,targetArena, graph, types::OpType::SOFTMAX);
 
             nodeResult->backward_fn = [targetArena](Node<Matrix>* self) {
                 Node<Matrix>* nodeZ = self->parents[0];
@@ -265,7 +269,7 @@ namespace BitMth::ia{
         ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
         if (graph != nullptr && predict.getRequiresGrad()) {
             
-            Node<Matrix>* nodeLoss = _createUnaryNodeHelper(predict, lossMatrix, graph, types::OpType::MSE_LOSS);
+            Node<Matrix>* nodeLoss = _createUnaryNodeHelper(predict, lossMatrix,targetArena, graph, types::OpType::MSE_LOSS);
 
             nodeLoss->backward_fn = [&predict, &real, targetArena](Node<Matrix>* self) {
                 Node<Matrix>* nodePred = self->parents[0];
@@ -287,7 +291,7 @@ namespace BitMth::ia{
         
         ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
         if (graph != nullptr && predict.getRequiresGrad()) {
-            Node<Matrix>* nodeLoss = _createUnaryNodeHelper(predict, lossMatrix, graph, types::OpType::BCE_LOSS);
+            Node<Matrix>* nodeLoss = _createUnaryNodeHelper(predict, lossMatrix,targetArena, graph, types::OpType::BCE_LOSS);
             nodeLoss->backward_fn = [&predict, &real, targetArena](Node<Matrix>* self) {
                 Node<Matrix>* nodePred = self->parents[0];
 
