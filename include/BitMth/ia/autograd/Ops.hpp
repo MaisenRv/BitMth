@@ -12,7 +12,7 @@ namespace BitMth::ia{
     private:
       using Matrix = linalg::Matrix<T>;
 
-      static Node<Matrix>* _getOrCreateNode(ComputationGraph<Matrix>* graph, const Matrix& matrix){
+      static Node<Matrix>* _getOrCreateNode(ComputationGraph<Matrix>* graph, Matrix& matrix){
         if(!matrix.getRequiresGrad())           return nullptr;
         if(matrix.getAutogradNode() != nullptr) return matrix.getAutogradNode();
 
@@ -35,7 +35,7 @@ namespace BitMth::ia{
         return nodeResult;
       }
       static Node<Matrix>* _createUnaryNodeHelper(const Matrix& in, Matrix& out, ComputationGraph<Matrix>* graph, types::OpType type){
-        Node<Matrix>* nodeIn = _getOrCreateNode(graph, in);
+        Node<Matrix>* nodeIn = _getOrCreateNode(graph, const_cast<Matrix&>(in));
 
         Node<Matrix>* nodeResult = graph->createNode();
         nodeResult->requiresGrad = true;
@@ -258,9 +258,7 @@ namespace BitMth::ia{
     }
 
     static Matrix mse(const Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr) {
-        T lossVal = LossFunctions<T>::mse(predict, real, targetArena);
-        Matrix lossMatrix(1, 1, targetArena);
-        lossMatrix(0, 0) = lossVal;
+        Matrix lossMatrix = LossFunctions<T>::mse(predict, real, targetArena);
 
         ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
         if (graph != nullptr && predict.getRequiresGrad()) {
@@ -283,10 +281,8 @@ namespace BitMth::ia{
     }
 
     static Matrix bce(const Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr) {
-        T lossVal = LossFunctions<T>::bce(predict, real, targetArena);
-        Matrix lossMatrix(1, 1, targetArena);
-        lossMatrix(0, 0) = lossVal;
-
+        Matrix lossMatrix = LossFunctions<T>::bce(predict, real, targetArena);
+        
         ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
         if (graph != nullptr && predict.getRequiresGrad()) {
             Node<Matrix>* nodeLoss = _createUnaryNodeHelper(predict, lossMatrix, graph, types::OpType::BCE_LOSS);
