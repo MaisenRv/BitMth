@@ -2,5 +2,5 @@
 mkdir -p build && cd build
 cmake -DCMAKE_BUILD_TYPE=Debug ..
 cmake --build .
-./run_math_tests
+./run_math_tests "$@"
 cd ..

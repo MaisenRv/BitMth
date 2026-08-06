@@ -1,7 +1,8 @@
-#include "BitTest/Assertions.hpp"
+#include "ia/autograd/Node.hpp"
 #include <BitTest/BitTest.hpp>
 #include <BitMth/linalg/Matrix.hpp>
 
+BIT_GROUP_BEGIN(matrix)
 BIT_TEST_CASE(MatrixInitializationDefault){
     BitMth::linalg::Matrix<float> m;
     BIT_ASSERT_EQ(0, m.getRows());
@@ -11,51 +12,73 @@ BIT_TEST_CASE(MatrixInitializationDefault){
     BIT_ASSERT_EQ(0, m.getStrides()[1]);
     BIT_ASSERT_EQ(nullptr, m.getArena());
     BIT_ASSERT_EQ(nullptr, m.getValues());
+    BIT_ASSERT_EQ(nullptr, m.getAutogradNode());
+    BIT_ASSERT_FALSE(m.getRequiresGrad());
+    BIT_ASSERT_EQ(0, m.getRowJump());
+    BIT_ASSERT_EQ(0, m.getColJump());
 }
 
 BIT_TEST_CASE(MatrixInitialization){
     BitMth::linalg::Matrix<double> m(2,3,nullptr);
+    size_t size = sizeof(double);
     BIT_ASSERT_EQ(2, m.getRows());
     BIT_ASSERT_EQ(3, m.getCols());
     BIT_ASSERT_EQ(6, m.size());
-    BIT_ASSERT_EQ(m.getCols() * sizeof(double), m.getStrides()[0]);
-    BIT_ASSERT_EQ(sizeof(double), m.getStrides()[1]);
+    BIT_ASSERT_EQ(m.getCols() * size, m.getStrides()[0]);
+    BIT_ASSERT_EQ(size, m.getStrides()[1]);
     BIT_ASSERT_EQ(nullptr, m.getArena());
+    BIT_ASSERT_EQ(nullptr, m.getAutogradNode());
+    BIT_ASSERT_FALSE(m.getRequiresGrad());
+    BIT_ASSERT_EQ(m.getStrides()[0] / size, m.getRowJump());
+    BIT_ASSERT_EQ(m.getStrides()[1] / size, m.getColJump());
 }
 
 BIT_TEST_CASE(MatrixInitializationZero){
     BitMth::linalg::Matrix<float> m(2,3,nullptr,true);
+    BitMth::linalg::Matrix<float> m2(2,3,nullptr,true);
+    m2.setWith(0);
+    size_t size = sizeof(float);
     BIT_ASSERT_EQ(2, m.getRows());
     BIT_ASSERT_EQ(3, m.getCols());
     BIT_ASSERT_EQ(6, m.size());
     BIT_ASSERT_EQ(nullptr, m.getArena());
-    for (size_t i = 0; i < m.getRows(); i++){
-        for (size_t j = 0; j < m.getCols(); j++){
-            BIT_ASSERT_EQ(0, m(i,j));
-        }
-    }
+    BIT_ASSERT_EQ(nullptr, m.getAutogradNode());
+    BIT_ASSERT_FALSE(m.getRequiresGrad());
+    BIT_ASSERT_EQ(m.getStrides()[0] / size, m.getRowJump());
+    BIT_ASSERT_EQ(m.getStrides()[1] / size, m.getColJump());
+    BIT_ASSERT_EQ(m, m2);
 }
 
 // COPY
 
 BIT_TEST_CASE(MatrixCopyConstructor){
     BitMth::linalg::Matrix<float> m(2,3,nullptr,true);
+    size_t size = sizeof(float);
     m(1,2) = 78;
     m(0,1) = 754;
     m(1,0) = 342;
     BitMth::linalg::Matrix<float> m2(m);
     BIT_ASSERT_EQ(m,m2);
     BIT_ASSERT_EQ(nullptr, m2.getArena());
+    BIT_ASSERT_EQ(nullptr, m.getAutogradNode());
+    BIT_ASSERT_EQ(m.getRequiresGrad(), m2.getRequiresGrad());
+    BIT_ASSERT_EQ(m.getStrides()[0] / size, m2.getRowJump());
+    BIT_ASSERT_EQ(m.getStrides()[1] / size, m2.getColJump());
     m2(1,2) = 999;
     BIT_ASSERT(m(1,2) != m2(1,2));
 }
 
 BIT_TEST_CASE(MatrixCloneFunct){
     BitMth::linalg::Matrix<double> m(2,3,nullptr,true);
+    size_t size = sizeof(double);
     m(1,2) = 28;
     m(0,1) = 7544;
     m(1,0) = 392;
     BitMth::linalg::Matrix<double> m2 = m.clone(nullptr);
+    BIT_ASSERT_EQ(nullptr, m.getAutogradNode());
+    BIT_ASSERT_EQ(m.getRequiresGrad(), m2.getRequiresGrad());
+    BIT_ASSERT_EQ(m.getStrides()[0] / size, m2.getRowJump());
+    BIT_ASSERT_EQ(m.getStrides()[1] / size, m2.getColJump());
     BIT_ASSERT_EQ(m,m2);
     BIT_ASSERT_EQ(nullptr, m2.getArena());
     m2(1,2) = 999;
@@ -64,6 +87,9 @@ BIT_TEST_CASE(MatrixCloneFunct){
 
 BIT_TEST_CASE(MatrixMoveConstructor) {
     BitMth::linalg::Matrix<double> m1(2, 3, nullptr, true);
+    BitMth::ia::Node<BitMth::linalg::Matrix<double>> node;
+    m1.setAutogradNode(&node);
+    size_t size = sizeof(double);
     m1(0, 0) = 5.5;
     m1(1, 2) = 10.5;
     const double* valuesPtr = m1.getValues(); 
@@ -74,6 +100,11 @@ BIT_TEST_CASE(MatrixMoveConstructor) {
     BIT_ASSERT_EQ(5.5, m2(0, 0));
     BIT_ASSERT_EQ(10.5, m2(1, 2));
     BIT_ASSERT_EQ(valuesPtr, m2.getValues());
+    BIT_ASSERT_EQ(&node, m2.getAutogradNode());
+    BIT_ASSERT_EQ(node.container, &m2);
+    BIT_ASSERT_EQ(m1.getRequiresGrad(), m2.getRequiresGrad());
+    BIT_ASSERT_EQ(m2.getStrides()[0] / size, m2.getRowJump());
+    BIT_ASSERT_EQ(m2.getStrides()[1] / size, m2.getColJump());
     BIT_ASSERT_EQ(0, m1.getRows());
     BIT_ASSERT_EQ(0, m1.getCols());
     BIT_ASSERT_EQ(0, m1.size());
@@ -81,23 +112,30 @@ BIT_TEST_CASE(MatrixMoveConstructor) {
     BIT_ASSERT_EQ(0, m1.getStrides()[1]);
     BIT_ASSERT_EQ(nullptr, m1.getArena());
     BIT_ASSERT_EQ(nullptr, m1.getValues());
+    BIT_ASSERT_EQ(nullptr, m1.getAutogradNode());
 }
 
 BIT_TEST_CASE(MatrixMoveAssignment) {
     BitMth::linalg::Matrix<double> m1(2, 3, nullptr, true);
+    BitMth::ia::Node<BitMth::linalg::Matrix<double>> node;
+    m1.setAutogradNode(&node);
+    size_t size = sizeof(double);
     m1(0, 0) = 111.0;
     m1(1, 1) = 222.0;
+    m1.setRequiresGrad(true);
     const double* valuesPtr = m1.getValues();
     BitMth::linalg::Matrix<double> m2(5, 5, nullptr, true);
     m2 = std::move(m1);
     BIT_ASSERT_EQ(2, m2.getRows());
     BIT_ASSERT_EQ(3, m2.getCols());
     BIT_ASSERT_EQ(6, m2.size());
-
     BIT_ASSERT_EQ(111.0, m2(0, 0) );
     BIT_ASSERT_EQ(222.0, m2(1, 1));
     BIT_ASSERT_EQ(valuesPtr, m2.getValues());
-
+    BIT_ASSERT_EQ(&node, m2.getAutogradNode());
+    BIT_ASSERT_EQ(m1.getRequiresGrad(), m2.getRequiresGrad());
+    BIT_ASSERT_EQ(m2.getStrides()[0] / size, m2.getRowJump());
+    BIT_ASSERT_EQ(m2.getStrides()[1] / size, m2.getColJump());
     BIT_ASSERT_EQ(0, m1.getRows());
     BIT_ASSERT_EQ(0, m1.getCols());
     BIT_ASSERT_EQ(0, m1.size());
@@ -105,25 +143,31 @@ BIT_TEST_CASE(MatrixMoveAssignment) {
     BIT_ASSERT_EQ(0, m1.getStrides()[1]);
     BIT_ASSERT_EQ(nullptr, m1.getArena());
     BIT_ASSERT_EQ(nullptr, m1.getValues());
+    BIT_ASSERT_EQ(nullptr, m1.getAutogradNode());
 }
 
 BIT_TEST_CASE(MatrixCopyAssignmentWithHeap) {
     BitMth::linalg::Matrix<double> src(2, 3, nullptr, true);
+    size_t size = sizeof(double);
     src(0, 0) = 1.1;
     src(0, 1) = 2.2;
     src(1, 2) = 3.3;
     BitMth::core::Arena fakeArena(18 * sizeof(double));
     BitMth::linalg::Matrix<double> dest(4, 4, &fakeArena, false);
     dest = src;
-    BIT_ASSERT(dest.getRows() == 2);
-    BIT_ASSERT(dest.getCols() == 3);
-    BIT_ASSERT(dest.size() == 6);
-    BIT_ASSERT(dest.getArena() == nullptr);
-    BIT_ASSERT(dest(0, 0) == 1.1);
-    BIT_ASSERT(dest(0, 1) == 2.2);
-    BIT_ASSERT(dest(1, 2) == 3.3);
+    BIT_ASSERT_EQ(2, dest.getRows());
+    BIT_ASSERT_EQ(3, dest.getCols());
+    BIT_ASSERT_EQ(6, dest.size());
+    BIT_ASSERT_EQ(nullptr, dest.getArena());
+    BIT_ASSERT_EQ(nullptr, dest.getAutogradNode());
+    BIT_ASSERT_EQ(src.getRequiresGrad(), dest.getRequiresGrad());
+    BIT_ASSERT_EQ(dest.getStrides()[0] / size, dest.getRowJump());
+    BIT_ASSERT_EQ(dest.getStrides()[1] / size, dest.getColJump());
+    BIT_ASSERT_EQ(1.1, dest(0, 0));
+    BIT_ASSERT_EQ(2.2, dest(0, 1));
+    BIT_ASSERT_EQ(3.3, dest(1, 2));
     dest = dest;
-    BIT_ASSERT(dest(1, 2) == 3.3);
+    BIT_ASSERT_EQ(3.3, dest(1, 2));
 }
 
 BIT_TEST_CASE(MatrixOperatorIndexing) {
@@ -132,13 +176,13 @@ BIT_TEST_CASE(MatrixOperatorIndexing) {
     m(0, 1) = 20.5;
     m(1, 0) = 30.5;
     m(1, 1) = 40.5;
-    BIT_ASSERT(m(0, 0) == 10.5);
-    BIT_ASSERT(m(0, 1) == 20.5);
-    BIT_ASSERT(m(1, 0) == 30.5);
-    BIT_ASSERT(m(1, 1) == 40.5);
+    BIT_ASSERT_EQ(10.5, m(0, 0));
+    BIT_ASSERT_EQ(20.5, m(0, 1));
+    BIT_ASSERT_EQ(30.5, m(1, 0));
+    BIT_ASSERT_EQ(40.5, m(1, 1));
     const BitMth::linalg::Matrix<double>& constMatrix = m;
-    BIT_ASSERT(constMatrix(0, 0) == 10.5);
-    BIT_ASSERT(constMatrix(1, 1) == 40.5);
+    BIT_ASSERT_EQ(10.5, constMatrix(0, 0));
+    BIT_ASSERT_EQ(40.5, constMatrix(1, 1));
 }
 
 // INDEXING
@@ -934,3 +978,4 @@ BIT_TEST_CASE(MatrixInPlaceMultiplication_Operator) {
     BitMth::linalg::Matrix<float> invalidB(400, 300, nullptr, true);
     BIT_ASSERT_THROWS(largeA *= invalidB);
 }
+BIT_GROUP_END()
