@@ -1,6 +1,5 @@
 #pragma once
 
-#include <climits>
 #include <cstddef>
 #include <cstdio>
 #include <iostream>
@@ -8,10 +7,10 @@
 #include <utility>
 #include <cstring>
 #include <iomanip>
-#include <vector>
 
 #include <BitMth/utils/Errors.hpp>
 #include <BitMth/utils/Constants.hpp>
+#include <BitMth/utils/MathUtils.hpp>
 #include <BitMth/core/Arena.hpp>
 #include <BitMth/core/ParallelExecutor.hpp>
 #include <BitMth/ia/autograd/Node.hpp>
@@ -612,9 +611,9 @@ namespace BitMth::linalg{
             if (rows != matrix.rows || cols != matrix.cols) return false;
             for (size_t i = 0; i < rows; i++) {
                 for (size_t j = 0; j < cols; j++) {
-                    T diff = (*this)(i, j) - matrix(i, j);
-                    if (diff < 0) diff = -diff;
-                    if (diff > margin) return false;
+                    if (!utils::isClose((*this)(i, j), matrix(i, j), margin)) {
+                        return false;
+                    }
                 }
             }
             return true;
@@ -681,8 +680,7 @@ namespace BitMth::linalg{
             );
             clear();
             for(size_t i = 0; i < rows; i++){
-                T* const currentRow = &m[i * rowJumpThis];
-                currentRow[i] = 1;
+                m[i * rowJumpThis + i] = T(1);
             }
         }
 
@@ -710,7 +708,7 @@ namespace BitMth::linalg{
 
         bool hasNaN() const {
             for (size_t i = 0; i < numElements; i++) {
-                if (std::isnan(m[i])) return true;
+                if(utils::isNaN(m[i])) return true;
             }
             return false;
         }

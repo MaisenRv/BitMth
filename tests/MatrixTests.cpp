@@ -775,6 +775,22 @@ BIT_TEST_CASE(MatrixUtilityOperations) {
     BIT_ASSERT_THROWS(B.setIdentity());
 }
 
+BIT_TEST_CASE(MatrixHasNaNValidation) {
+    using Matrix = BitMth::linalg::Matrix<float>;
+
+    Matrix m(2, 2);
+    m.getValues()[0] = 1.0f;
+    m.getValues()[1] = 2.0f;
+    m.getValues()[2] = 3.0f;
+    m.getValues()[3] = 4.0f;
+
+    BIT_EXPECT_FALSE(m.hasNaN());
+
+    // Inyectar un NaN deliberadamente
+    m(1,0) = std::numeric_limits<float>::quiet_NaN();
+
+    BIT_EXPECT_TRUE(m.hasNaN());
+}
 
 BIT_TEST_CASE(Parallel_AdditionOperators) {
     BitMth::linalg::Matrix<int> m(500, 400, nullptr, true);
