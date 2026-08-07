@@ -1,6 +1,6 @@
 #!/bin/bash
 mkdir -p build && cd build
-cmake -DCMAKE_BUILD_TYPE=Debug ..
+cmake -DBUILD_EXAMPLES=OFF -DBUILD_TESTS=ON -DCMAKE_BUILD_TYPE=Debug ..
 cmake --build .
 ./run_math_tests "$@"
 cd ..

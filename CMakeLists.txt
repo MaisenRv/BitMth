@@ -15,24 +15,31 @@ target_include_directories(BitMth INTERFACE
 target_compile_options(BitMth INTERFACE -O3 -ffast-math)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+option(BUILD_TESTS    "Compilar la suite de pruebas" ON)
+option(BUILD_EXAMPLES "Compilar los ejemplos de la librería" ON)
+
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
     message(STATUS "Modo desarrollo: Activado")
-    
-    include(FetchContent)
-    FetchContent_Declare(
-        BitTest
-        GIT_REPOSITORY https://github.com/MaisenRv/BitTest.git
-        GIT_TAG        main
-    )
 
-    FetchContent_MakeAvailable(BitTest)
+    if(BUILD_EXAMPLES)
+        message(STATUS "Compilando ejemplos de BitMth")
+        add_executable(ejemplo_bitmth examples/main.cpp)
+        target_link_libraries(ejemplo_bitmth PRIVATE BitMth)
+    endif()
 
-    message(STATUS "Compilando ejemplos de BitMth")
-    add_executable(ejemplo_bitmth examples/main.cpp)
-    target_link_libraries(ejemplo_bitmth PRIVATE BitMth)
+    if(BUILD_TESTS)
+        message(STATUS "Compilando pruebas de BitMth usando BitTest")
 
-    message(STATUS "Compilando pruebas de BitMth usando BitTest")
-    file(GLOB SOURCES_TESTS "tests/*.cpp")
-    add_executable(run_math_tests ${SOURCES_TESTS})
-    target_link_libraries(run_math_tests PRIVATE BitMth BitTest)
+        include(FetchContent)
+        FetchContent_Declare(
+            BitTest
+            GIT_REPOSITORY https://github.com/MaisenRv/BitTest.git
+            GIT_TAG        main
+        )
+        FetchContent_MakeAvailable(BitTest)
+
+        file(GLOB_RECURSE SOURCES_TESTS CONFIGURE_DEPENDS "tests/*.cpp")
+        add_executable(run_math_tests ${SOURCES_TESTS})
+        target_link_libraries(run_math_tests PRIVATE BitMth BitTest)
+    endif()
 endif()
