@@ -1,14 +1,8 @@
-#include "utils/Constants.hpp"
 #include <BitTest/BitTest.hpp>
 #include <BitMth/ia/ActivationFunctions.hpp>
+#include <BitMth/utils/MathUtils.hpp>
 
 BIT_GROUP_BEGIN(activationFunct)
-
-template <typename T>
-inline bool isClose(T a, T b, T epsilon = BitMth::utils::EPSILON<T>) {
-    return std::abs(a - b) < epsilon;
-}
-
 
 BIT_TEST_CASE(ReluActivation) {
     using Act = BitMth::ia::ActivationFunctions<float>;
@@ -25,9 +19,9 @@ BIT_TEST_CASE(ReluActivation) {
     BIT_ASSERT_EQ(res.getRows(), static_cast<size_t>(1));
     BIT_ASSERT_EQ(res.getCols(), static_cast<size_t>(3));
 
-    BIT_EXPECT_TRUE(isClose(res.getValues()[0], 0.0f));
-    BIT_EXPECT_TRUE(isClose(res.getValues()[1], 0.0f));
-    BIT_EXPECT_TRUE(isClose(res.getValues()[2], 3.5f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[0], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[1], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[2], 3.5f));
 }
 
 BIT_TEST_CASE(ReluDerivative) {
@@ -45,9 +39,9 @@ BIT_TEST_CASE(ReluDerivative) {
     BIT_ASSERT_EQ(dZ.getRows(), static_cast<size_t>(1));
     BIT_ASSERT_EQ(dZ.getCols(), static_cast<size_t>(3));
 
-    BIT_EXPECT_TRUE(isClose(dZ.getValues()[0], 0.0f));
-    BIT_EXPECT_TRUE(isClose(dZ.getValues()[1], 0.0f));
-    BIT_EXPECT_TRUE(isClose(dZ.getValues()[2], 1.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[0], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[1], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[2], 1.0f));
 }
 
 BIT_TEST_CASE(SigmoidActivation) {
@@ -64,9 +58,9 @@ BIT_TEST_CASE(SigmoidActivation) {
     BIT_ASSERT_EQ(res.getCols(), static_cast<size_t>(2));
 
     // sigmoid(0) = 0.5
-    BIT_EXPECT_TRUE(isClose(res.getValues()[0], 0.5));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[0], 0.5));
     // sigmoid(2) ≈ 0.880797
-    BIT_EXPECT_TRUE(isClose(res.getValues()[1], 0.880797));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[1], 0.880797));
 }
 
 BIT_TEST_CASE(SigmoidDerivative) {
@@ -79,7 +73,7 @@ BIT_TEST_CASE(SigmoidDerivative) {
     Matrix A = Act::sigmoid(Z); // A = 0.5
     Matrix dA = Act::sigmoidDerivative(Z, A); // a * (1 - a) = 0.5 * 0.5 = 0.25
 
-    BIT_EXPECT_TRUE(isClose(dA.getValues()[0], 0.25));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[0], 0.25));
 }
 
 BIT_TEST_CASE(TanhActivation) {
@@ -93,9 +87,9 @@ BIT_TEST_CASE(TanhActivation) {
     Matrix res = Act::tanh(Z);
 
     // tanh(0) = 0
-    BIT_EXPECT_TRUE(isClose(res.getValues()[0], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[0], 0.0f));
     // tanh(1) ≈ 0.761594f
-    BIT_EXPECT_TRUE(isClose(res.getValues()[1], 0.761594f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[1], 0.761594f));
 }
 
 BIT_TEST_CASE(TanhDerivative) {
@@ -108,7 +102,7 @@ BIT_TEST_CASE(TanhDerivative) {
     Matrix A = Act::tanh(Z); // A = 0
     Matrix dA = Act::tanhDerivative(Z, A); // 1 - 0^2 = 1
 
-    BIT_EXPECT_TRUE(isClose(dA.getValues()[0], 1.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[0], 1.0f));
 }
 
 BIT_TEST_CASE(SoftmaxActivation) {
@@ -128,7 +122,7 @@ BIT_TEST_CASE(SoftmaxActivation) {
 
     // Comprobar que las probabilidades sumen 1.0
     float sum = res.getValues()[0] + res.getValues()[1] + res.getValues()[2];
-    BIT_EXPECT_TRUE(isClose(sum, 1.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(sum, 1.0f));
 
     // Comprobar la propiedad de orden (e^1 < e^2 < e^3)
     BIT_EXPECT_TRUE(res.getValues()[0] < res.getValues()[1]);
@@ -157,8 +151,8 @@ BIT_TEST_CASE(SoftmaxDerivative) {
 
     // s0*(g0 - dot) = 0.5*(1.0 - 0.5) = 0.25
     // s1*(g1 - dot) = 0.5*(0.0 - 0.5) = -0.25
-    BIT_EXPECT_TRUE(isClose(dZ.getValues()[0],  0.25f));
-    BIT_EXPECT_TRUE(isClose(dZ.getValues()[1], -0.25f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[0],  0.25f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[1], -0.25f));
 }
 
 BIT_TEST_CASE(ActivationFunctionsEmptyMatrix) {
@@ -187,14 +181,14 @@ BIT_TEST_CASE(ReluBatch) {
     BIT_ASSERT_EQ(res.getCols(), size_t(3));
 
     // Fila 0
-    BIT_EXPECT_TRUE(isClose(res.getValues()[0], 0.0f));
-    BIT_EXPECT_TRUE(isClose(res.getValues()[1], 0.0f));
-    BIT_EXPECT_TRUE(isClose(res.getValues()[2], 3.5f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[0], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[1], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[2], 3.5f));
 
     // Fila 1
-    BIT_EXPECT_TRUE(isClose(res.getValues()[3], 1.5f));
-    BIT_EXPECT_TRUE(isClose(res.getValues()[4], 0.0f));
-    BIT_EXPECT_TRUE(isClose(res.getValues()[5], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[3], 1.5f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[4], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[5], 0.0f));
 }
 
 BIT_TEST_CASE(ReluDerivativeBatch) {
@@ -212,14 +206,14 @@ BIT_TEST_CASE(ReluDerivativeBatch) {
     BIT_ASSERT_EQ(dZ.getCols(), size_t(3));
 
     // Fila 0
-    BIT_EXPECT_TRUE(isClose(dZ.getValues()[0], 0.0f));
-    BIT_EXPECT_TRUE(isClose(dZ.getValues()[1], 0.0f));
-    BIT_EXPECT_TRUE(isClose(dZ.getValues()[2], 1.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[0], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[1], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[2], 1.0f));
 
     // Fila 1
-    BIT_EXPECT_TRUE(isClose(dZ.getValues()[3], 1.0f));
-    BIT_EXPECT_TRUE(isClose(dZ.getValues()[4], 0.0f));
-    BIT_EXPECT_TRUE(isClose(dZ.getValues()[5], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[3], 1.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[4], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[5], 0.0f));
 }
 
 
@@ -237,12 +231,12 @@ BIT_TEST_CASE(SigmoidBatch) {
     BIT_ASSERT_EQ(res.getCols(), size_t(2));
 
     // Fila 0: sigmoid(0) = 0.5, sigmoid(2) ≈ 0.880797
-    BIT_EXPECT_TRUE(isClose(res.getValues()[0], 0.5));
-    BIT_EXPECT_TRUE(isClose(res.getValues()[1], 0.880797));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[0], 0.5));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[1], 0.880797));
 
     // Fila 1: sigmoid(-2) ≈ 0.119202, sigmoid(0) = 0.5
-    BIT_EXPECT_TRUE(isClose(res.getValues()[2], 0.119202));
-    BIT_EXPECT_TRUE(isClose(res.getValues()[3], 0.5));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[2], 0.119202));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[3], 0.5));
 }
 
 BIT_TEST_CASE(SigmoidDerivativeBatch) {
@@ -257,10 +251,10 @@ BIT_TEST_CASE(SigmoidDerivativeBatch) {
     Matrix dA = Act::sigmoidDerivative(Z, A);
 
     // Formula: A * (1 - A)
-    BIT_EXPECT_TRUE(isClose(dA.getValues()[0], 0.25)); // 0.5 * 0.5
-    BIT_EXPECT_TRUE(isClose(dA.getValues()[1], 0.00)); // 1.0 * 0.0
-    BIT_EXPECT_TRUE(isClose(dA.getValues()[2], 0.00)); // 0.0 * 1.0
-    BIT_EXPECT_TRUE(isClose(dA.getValues()[3], 0.16)); // 0.2 * 0.8
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[0], 0.25)); // 0.5 * 0.5
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[1], 0.00)); // 1.0 * 0.0
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[2], 0.00)); // 0.0 * 1.0
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[3], 0.16)); // 0.2 * 0.8
 }
 
 
@@ -274,10 +268,10 @@ BIT_TEST_CASE(TanhBatch) {
 
     Matrix res = Act::tanh(Z);
 
-    BIT_EXPECT_TRUE(isClose(res.getValues()[0],  0.0f));
-    BIT_EXPECT_TRUE(isClose(res.getValues()[1],  0.761594f));
-    BIT_EXPECT_TRUE(isClose(res.getValues()[2], -0.761594f));
-    BIT_EXPECT_TRUE(isClose(res.getValues()[3],  0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[0],  0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[1],  0.761594f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[2], -0.761594f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[3],  0.0f));
 }
 
 BIT_TEST_CASE(TanhDerivativeBatch) {
@@ -292,10 +286,10 @@ BIT_TEST_CASE(TanhDerivativeBatch) {
     Matrix dA = Act::tanhDerivative(Z, A);
 
     // Formula: 1 - A^2
-    BIT_EXPECT_TRUE(isClose(dA.getValues()[0], 1.00f)); // 1 - 0
-    BIT_EXPECT_TRUE(isClose(dA.getValues()[1], 0.75f)); // 1 - 0.25
-    BIT_EXPECT_TRUE(isClose(dA.getValues()[2], 0.00f)); // 1 - 1
-    BIT_EXPECT_TRUE(isClose(dA.getValues()[3], 0.75f)); // 1 - 0.25
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[0], 1.00f)); // 1 - 0
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[1], 0.75f)); // 1 - 0.25
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[2], 0.00f)); // 1 - 1
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[3], 0.75f)); // 1 - 0.25
 }
 
 BIT_TEST_CASE(SoftmaxBatch) {
@@ -316,13 +310,13 @@ BIT_TEST_CASE(SoftmaxBatch) {
     float sumRow0 = res.getValues()[0] + res.getValues()[1] + res.getValues()[2];
     float sumRow1 = res.getValues()[3] + res.getValues()[4] + res.getValues()[5];
 
-    BIT_EXPECT_TRUE(isClose(sumRow0, 1.0f));
-    BIT_EXPECT_TRUE(isClose(sumRow1, 1.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(sumRow0, 1.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(sumRow1, 1.0f));
 
     // Fila 1 (todos los logits iguales -> equiprobable 1/3)
-    BIT_EXPECT_TRUE(isClose(res.getValues()[3], 1.0f / 3.0f));
-    BIT_EXPECT_TRUE(isClose(res.getValues()[4], 1.0f / 3.0f));
-    BIT_EXPECT_TRUE(isClose(res.getValues()[5], 1.0f / 3.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[3], 1.0f / 3.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[4], 1.0f / 3.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[5], 1.0f / 3.0f));
 }
 
 BIT_TEST_CASE(SoftmaxDerivativeBatch) {
@@ -343,12 +337,12 @@ BIT_TEST_CASE(SoftmaxDerivativeBatch) {
     BIT_ASSERT_EQ(dZ.getCols(), size_t(2));
 
     // Fila 0: dot = 0.5, dZ_00 = 0.5*(1 - 0.5) = 0.25, dZ_01 = 0.5*(0 - 0.5) = -0.25
-    BIT_EXPECT_TRUE(isClose(dZ.getValues()[0],  0.25f));
-    BIT_EXPECT_TRUE(isClose(dZ.getValues()[1], -0.25f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[0],  0.25f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[1], -0.25f));
 
     // Fila 1: dot = 0.2, dZ_10 = 0.8*(0 - 0.2) = -0.16, dZ_11 = 0.2*(1 - 0.2) = 0.16
-    BIT_EXPECT_TRUE(isClose(dZ.getValues()[2], -0.16f));
-    BIT_EXPECT_TRUE(isClose(dZ.getValues()[3],  0.16f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[2], -0.16f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[3],  0.16f));
 }
 
 BIT_GROUP_END()
