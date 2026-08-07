@@ -9,7 +9,7 @@ namespace BitMth::ia{
   template<typename T>
   struct Node{
     T grad;
-    T* container;
+    T* container{nullptr};
     std::vector<Node<T>*> parents;
     bool requiresGrad{false};
     types::OpType operation{types::OpType::NONE};

@@ -6,7 +6,6 @@
 #include <cmath>
 #include <utility>
 #include <cstring>
-#include <iomanip>
 
 #include <BitMth/utils/Errors.hpp>
 #include <BitMth/utils/Constants.hpp>
@@ -14,6 +13,16 @@
 #include <BitMth/core/Arena.hpp>
 #include <BitMth/core/ParallelExecutor.hpp>
 #include <BitMth/ia/autograd/Node.hpp>
+
+namespace BitMth::linalg{
+    template <typename T>
+    class Matrix;
+}
+
+namespace BitMth::utils {
+  template<typename T>
+  std::ostream& show(std::ostream& os, const BitMth::linalg::Matrix<T>& matrix,int precision, int width);
+}
 
 namespace BitMth::linalg{
     template <typename T>
@@ -684,28 +693,6 @@ namespace BitMth::linalg{
             }
         }
 
-        friend std::ostream& operator<<(std::ostream& os, const Matrix<T>& matrix) {
-            std::ios_base::fmtflags f(os.flags());
-            const int precision = 4;
-            const int width = 8;
-
-            os << "\n  Matrix [" << matrix.rows << "x" << matrix.cols << "]\n";
-            os << "  ┌" << std::string(matrix.cols * (width + 1) + 1, ' ') << "┐\n";
-
-            for (size_t i = 0; i < matrix.rows; i++) {
-                os << "  │ ";
-                for (size_t j = 0; j < matrix.cols; j++) {
-                    os << std::fixed << std::setprecision(precision) << std::setw(width) << matrix(i, j);
-                    if (j < matrix.cols - 1) { os << " "; }
-                }
-                os << " │\n";
-            }
-
-            os << "  └" << std::string(matrix.cols * (width + 1) + 1, ' ') << "┘\n";
-            os.flags(f); 
-            return os;
-        }
-
         bool hasNaN() const {
             for (size_t i = 0; i < numElements; i++) {
                 if(utils::isNaN(m[i])) return true;
@@ -713,24 +700,13 @@ namespace BitMth::linalg{
             return false;
         }
 
+        friend std::ostream& operator<<(std::ostream& os, const Matrix<T>& matrix) {
+            return utils::show<T>(os, matrix, 4, 8);
+        }
+
+
         void print(int precision = 4, int width = 8) const {
-            std::ios_base::fmtflags f(std::cout.flags());
-            
-            std::cout << "\n  Matrix [" << rows << "x" << cols << "]\n";
-            std::cout << "  ┌" << std::string(cols * (width + 1) + 1, ' ') << "┐\n";
-
-            for (size_t i = 0; i < rows; i++) {
-                std::cout << "  │ ";
-                for (size_t j = 0; j < cols; j++) {
-                    std::cout << std::fixed << std::setprecision(precision) << std::setw(width) << (*this)(i, j);
-                    
-                    if (j < cols - 1) { std::cout << " "; }
-                }
-                std::cout << " │\n";
-            }
-
-            std::cout << "  └" << std::string(cols * (width + 1) + 1, ' ') << "┘\n\n";
-            std::cout.flags(f); 
+           utils::show<T>(std::cout, *this, precision, width) << std::endl;
         }
 
         Matrix<T> getRowsByIndices(const std::vector<size_t>& indices, size_t offset, size_t count) const {
@@ -771,3 +747,5 @@ namespace BitMth::linalg{
 
     };
 }
+
+#include <BitMth/utils/formatUtils.hpp>
