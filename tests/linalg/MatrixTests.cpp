@@ -1,21 +1,10 @@
-#include "ia/autograd/Node.hpp"
 #include <BitTest/BitTest.hpp>
-#include <BitMth/linalg/Matrix.hpp>
+#include "../TestUtils.hpp"
 
 BIT_GROUP_BEGIN(matrix)
 BIT_TEST_CASE(MatrixInitializationDefault){
     BitMth::linalg::Matrix<float> m;
-    BIT_ASSERT_EQ(0, m.getRows());
-    BIT_ASSERT_EQ(0, m.getCols());
-    BIT_ASSERT_EQ(0, m.size());
-    BIT_ASSERT_EQ(0, m.getStrides()[0]);
-    BIT_ASSERT_EQ(0, m.getStrides()[1]);
-    BIT_ASSERT_EQ(nullptr, m.getArena());
-    BIT_ASSERT_EQ(nullptr, m.getValues());
-    BIT_ASSERT_EQ(nullptr, m.getAutogradNode());
-    BIT_ASSERT_FALSE(m.getRequiresGrad());
-    BIT_ASSERT_EQ(0, m.getRowJump());
-    BIT_ASSERT_EQ(0, m.getColJump());
+    BitMth::tests::assertMatrixIsDefaultInitialized<float>(m);
 }
 
 BIT_TEST_CASE(MatrixInitialization){
