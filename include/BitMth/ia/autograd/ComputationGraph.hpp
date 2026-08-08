@@ -24,37 +24,38 @@ namespace BitMth::ia{
         return ptr;
       }
 
-      void backward(Node<T>* lossNode){
-        if (lossNode == nullptr) return;
+    //   void backward(Node<T>* lossNode){
+    //     if (lossNode == nullptr) return;
 
-        std::vector<Node<T>*> order;
-        std::unordered_set<Node<T>*> visited;
+    //     std::vector<Node<T>*> order;
+    //     std::unordered_set<Node<T>*> visited;
 
-        std::function<void(Node<T>*)> buildOrder = [&](Node<T>* node) {
-            if (node == nullptr || visited.find(node) != visited.end()) return;
-            visited.insert(node);
+    //     std::function<void(Node<T>*)> buildOrder = [&](Node<T>* node) {
+    //         if (node == nullptr || visited.find(node) != visited.end()) return;
+    //         visited.insert(node);
 
-            for (Node<T>* parent : node->parents) {
-                buildOrder(parent);
-            }
-            order.push_back(node);
-        };
+    //         for (Node<T>* parent : node->parents) {
+    //             buildOrder(parent);
+    //         }
+    //         order.push_back(node);
+    //     };
 
-        buildOrder(lossNode);
+    //     buildOrder(lossNode);
 
-        for (auto it = order.rbegin(); it != order.rend(); ++it) {
-            Node<T>* node = *it;
-            if (node->backward_fn) {
-                node->backward_fn(node);
-            }
-        }
-      }
+    //     for (auto it = order.rbegin(); it != order.rend(); ++it) {
+    //         Node<T>* node = *it;
+    //         if (node->backward_fn) {
+    //             node->backward_fn(node);
+    //         }
+    //     }
+    //   }
       
       void clear(){ nodes.clear(); }
 
       void _makeActive() { activeGraph = this; }
       void _deactivate() { activeGraph = nullptr; }
 
+      const std::vector<std::unique_ptr<Node<T>>>& getNodes() const noexcept { return nodes;}
       static ComputationGraph<T>* getComputationGraph(){return activeGraph;}
       static bool isCreateGraph(){ return activeGraph != nullptr; }
   };

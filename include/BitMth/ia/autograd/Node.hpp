@@ -8,11 +8,16 @@
 namespace BitMth::ia{
   template<typename T>
   struct Node{
-    T grad;
-    T* container{nullptr};
+    T* grad{nullptr};
+    T* values{nullptr};
     std::vector<Node<T>*> parents;
     bool requiresGrad{false};
     types::OpType operation{types::OpType::NONE};
     std::function<void(Node<T>*)> backward_fn{nullptr};
+
+    ~Node(){
+      delete grad;
+      delete values;
+    }
   };
 }
