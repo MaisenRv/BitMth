@@ -6,13 +6,13 @@
 #include <cmath>
 #include <utility>
 #include <cstring>
+#include <vector>
 
 #include <BitMth/utils/Errors.hpp>
 #include <BitMth/utils/Constants.hpp>
 #include <BitMth/utils/MathUtils.hpp>
 #include <BitMth/core/Arena.hpp>
 #include <BitMth/core/ParallelExecutor.hpp>
-#include <BitMth/ia/autograd/Node.hpp>
 
 namespace BitMth::linalg{
     template <typename T>
@@ -38,8 +38,6 @@ namespace BitMth::linalg{
         size_t stride[2]{};
         T *m{nullptr};
         core::Arena *arena{nullptr};
-        ia::Node<Matrix<T>>* autogradNode{nullptr};
-        bool requiresGrad{false};
 
         size_t rowJumpThis{0};
         size_t colJumpThis{0};
@@ -168,13 +166,11 @@ namespace BitMth::linalg{
                 stride[1] = inMatrix.stride[1];
                 _updateStrideJumps();
                 arena = nullptr;
-                requiresGrad = inMatrix.requiresGrad;
                 std::memcpy(m,inMatrix.m,numElements * sizeof(T));
             }
 
         Matrix<T> clone(core::Arena *arenaContainer) const {
             Matrix<T> copy(rows,cols,stride,arenaContainer);
-            copy.requiresGrad = requiresGrad;
             std::memcpy(copy.m, m, numElements * sizeof(T));
             return copy;
         }
@@ -183,11 +179,6 @@ namespace BitMth::linalg{
             rows(inMatrix.rows), cols(inMatrix.cols),numElements(inMatrix.numElements), m(inMatrix.m), arena(inMatrix.arena){
                 stride[0] = inMatrix.stride[0];
                 stride[1] = inMatrix.stride[1];
-                autogradNode = inMatrix.autogradNode;
-                if(autogradNode != nullptr){
-                    autogradNode->container = this; 
-                }
-                requiresGrad = inMatrix.requiresGrad;
                 _updateStrideJumps();
                 inMatrix.stride[0] = 0;
                 inMatrix.stride[1] = 0;
@@ -198,7 +189,6 @@ namespace BitMth::linalg{
                 inMatrix.numElements = 0;
                 inMatrix.m = nullptr;
                 inMatrix.arena = nullptr;
-                inMatrix.autogradNode = nullptr;
             }
 
         Matrix& operator=(const Matrix& inMatrix){
@@ -219,7 +209,6 @@ namespace BitMth::linalg{
             stride[0] = inMatrix.stride[0];
             stride[1] = inMatrix.stride[1];
             _updateStrideJumps();
-            autogradNode = nullptr;
             std::memcpy(m, inMatrix.m, numElements * sizeof(T));
             return *this;
         }
@@ -232,11 +221,6 @@ namespace BitMth::linalg{
             arena = inMatrix.arena;
             rows = inMatrix.rows;
             cols = inMatrix.cols;
-            autogradNode = inMatrix.autogradNode;
-            if(autogradNode != nullptr){
-                autogradNode->container = this; 
-            }
-            requiresGrad = inMatrix.requiresGrad;
             numElements = inMatrix.numElements;
             m = inMatrix.m;
             stride[0] = inMatrix.stride[0];
@@ -252,7 +236,6 @@ namespace BitMth::linalg{
             inMatrix.stride[1] = 0;
             inMatrix.rowJumpThis = 0;
             inMatrix.colJumpThis = 0;
-            inMatrix.autogradNode = nullptr;
 
             return *this;
         }
@@ -739,12 +722,6 @@ namespace BitMth::linalg{
         inline size_t               size()        const noexcept { return numElements; }
         inline const size_t         getRowJump()  const noexcept { return rowJumpThis; }
         inline const size_t         getColJump()  const noexcept { return colJumpThis; }
-
-        inline ia::Node<Matrix<T>>* getAutogradNode() const noexcept           { return autogradNode; }
-        inline void                 setAutogradNode(ia::Node<Matrix<T>>* node) { autogradNode = node; autogradNode->container = this; }  
-        inline void                 setRequiresGrad(bool req) noexcept         { requiresGrad = req; }
-        inline bool                 getRequiresGrad() const noexcept           {return (requiresGrad || (autogradNode != nullptr && autogradNode->requiresGrad)); }
-
     };
 }
 
