@@ -19,10 +19,10 @@ namespace BitMth::ia{
             );
         };
 
-        static Matrix reluDerivative(const Matrix& matrixZ, const Matrix& matrixA, core::Arena* targetArena = nullptr){
-            return Matrix::scalarApplyFunction(matrixZ, T(0.0), targetArena,
-                [](T valZ , T scalarZero ){
-                    return valZ > scalarZero ? T(1.0) : T(0.0);
+        static Matrix reluDerivative(const Matrix& matrixA, const Matrix& matrixGrad, core::Arena* targetArena = nullptr){
+            return Matrix::matrixApplyFunction(matrixA, matrixGrad, targetArena,
+                [](T valA, T valGrad) {
+                    return valA > T(0.0) ? valGrad : T(0.0);
                 }
             );
         };
@@ -35,10 +35,10 @@ namespace BitMth::ia{
             );
         };
 
-        static Matrix sigmoidDerivative(const Matrix& matrixZ, const Matrix& matrixA, core::Arena* targetArena = nullptr){
-            return Matrix::scalarApplyFunction(matrixA, T(1.0), targetArena,
-                [](T valA , T scalar ){
-                    return valA * ( scalar - valA);
+        static Matrix sigmoidDerivative(const Matrix& matrixA, const Matrix& matrixGrad, core::Arena* targetArena = nullptr){
+            return Matrix::matrixApplyFunction(matrixA, matrixGrad, targetArena,
+                [](T valA, T valGrad) {
+                    return valGrad * valA * (T(1.0) - valA);
                 }
             );
         };
@@ -51,10 +51,10 @@ namespace BitMth::ia{
             );
         };
 
-        static Matrix tanhDerivative(const Matrix& matrixZ, const Matrix& matrixA, core::Arena* targetArena = nullptr){
-            return Matrix::scalarApplyFunction(matrixA, T(1.0), targetArena,
-                [](T valA , T scalar ){
-                    return scalar - (valA * valA);
+        static Matrix tanhDerivative(const Matrix& matrixA, const Matrix& matrixGrad, core::Arena* targetArena = nullptr){
+            return Matrix::matrixApplyFunction(matrixA, matrixGrad, targetArena,
+                [](T valA, T valGrad) {
+                    return valGrad * (T(1.0) - (valA * valA));
                 }
             );
         };
@@ -96,27 +96,22 @@ namespace BitMth::ia{
             }
             return result;
         };
-        static Matrix softmaxDerivative(const Matrix& matrixZ, const Matrix& matrixA, core::Arena* targetArena = nullptr) {
-            size_t aRows = matrixZ.getRows();
-            size_t aCols = matrixZ.getCols();
-    
-            if (aRows == 0 || aCols == 0) {
-                return Matrix(aRows, aCols, targetArena, false);
-            }
-    
+        static Matrix softmaxDerivative(const Matrix& matrixA, const Matrix& matrixGrad, core::Arena* targetArena = nullptr) {
+            size_t aRows = matrixA.getRows();
+            size_t aCols = matrixA.getCols();
+            if (aRows == 0 || aCols == 0) return Matrix(aRows, aCols, targetArena, false);
+
             Matrix result(aRows, aCols, targetArena, false);
 
-            const size_t jumpRowA    = matrixZ.getRowJump();
-            const size_t jumpColA    = matrixZ.getColJump();
-
-            const size_t jumpRowGrad = matrixA.getRowJump();
-            const size_t jumpColGrad = matrixA.getColJump();
-
+            const size_t jumpRowA    = matrixA.getRowJump();
+            const size_t jumpColA    = matrixA.getColJump();
+            const size_t jumpRowGrad = matrixGrad.getRowJump();
+            const size_t jumpColGrad = matrixGrad.getColJump();
             const size_t jumpRowOut  = result.getRowJump();
 
-            const T* const valuesA = matrixZ.getValues();
-            const T* const valuesGrad = matrixA.getValues();
-            T* const valuesOut = result.getValues();
+            const T* const valuesA    = matrixA.getValues();
+            const T* const valuesGrad = matrixGrad.getValues();
+            T* const valuesOut        = result.getValues();
 
             for (size_t r = 0; r < aRows; r++) {
                 const T* const rowA    = &valuesA[r * jumpRowA];
@@ -134,7 +129,6 @@ namespace BitMth::ia{
                     rowOut[c] = s_val * (g_val - dotProduct);
                 }
             }
-
             return result;
         }
     };
