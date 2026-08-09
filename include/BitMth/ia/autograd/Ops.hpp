@@ -86,7 +86,6 @@ namespace BitMth::ia{
 
     }
     
-    
     static inline N* sub(const std::vector<N*>& inputs,core::Arena *targetArena){
       if (inputs.empty()) return nullptr;
 
@@ -186,158 +185,134 @@ namespace BitMth::ia{
       return newNode;
     }
 
-  //   static inline Matrix relu(const Matrix& Z,core::Arena *targetArena = nullptr ){
-  //     Matrix result = ActivationFunctions<T>::relu(Z, targetArena);
-  //     ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
+    static inline N* relu(N* A,core::Arena *targetArena){
+      if (!A) return nullptr;
+      N* newNode = _createNodeHelper({A}, types::OpType::RELU);
+      _elementWiseHelper(newNode, {A}, targetArena);
 
-  //     if(graph == nullptr) return result;
+      *(newNode->values) = ActivationFunctions<T>::relu(*(A->values),targetArena); 
+      newNode->backward_fn = [targetArena](N* self) {
+        if (!self->grad || self->parents.empty()) return;
 
-  //     if(Z.getRequiresGrad()){
+        N* parentA = self->parents[0]; 
 
-  //         Node<Matrix>* nodeResult = _createUnaryNodeHelper(Z, result,targetArena, graph, types::OpType::RELU);
-  //         nodeResult->backward_fn = [targetArena](Node<Matrix>* self){
-  //           Node<Matrix>* nodeZ = self->parents[0];
-  //           if(nodeZ != nullptr){
-  //             Matrix dZ = ActivationFunctions<T>::reluDerivative(*nodeZ->container, *self->container,targetArena);
-  //             nodeZ->grad += Ops<T>::hadamard(self->grad, dZ, targetArena);
-  //           }
-  //         };
-  //         result.setRequiresGrad(true);
-  //         result.setAutogradNode(nodeResult);
-  //     }
-  //     return result;
-  //   }
+        if (parentA->requiresGrad && parentA->grad) {
+            *(parentA->grad) += ActivationFunctions<T>::reluDerivative(*(self->values), *(self->grad),targetArena); 
+        }
+      };
+      return newNode;
+    }
 
-  //   static inline Matrix sigmoid(const Matrix& Z,core::Arena *targetArena = nullptr ){
-  //     Matrix result = ActivationFunctions<T>::sigmoid(Z, targetArena);
-  //     ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
+    static inline N* sigmoid(N* A,core::Arena *targetArena){
+      if (!A) return nullptr;
+      N* newNode = _createNodeHelper({A}, types::OpType::SIGMOID);
+      _elementWiseHelper(newNode, {A}, targetArena);
 
-  //     if(graph == nullptr) return result;
+      *(newNode->values) = ActivationFunctions<T>::sigmoid(*(A->values),targetArena); 
+      newNode->backward_fn = [targetArena](N* self) {
+        if (!self->grad || self->parents.empty()) return;
 
-  //     if(Z.getRequiresGrad()){
+        N* parentA = self->parents[0]; 
 
-  //         Node<Matrix>* nodeResult = _createUnaryNodeHelper(Z, result,targetArena, graph, types::OpType::SIGMOID);
-  //         nodeResult->backward_fn = [targetArena](Node<Matrix>* self){
-  //           Node<Matrix>* nodeZ = self->parents[0];
-  //           if(nodeZ != nullptr){
-  //             Matrix dA = ActivationFunctions<T>::sigmoidDerivative(*nodeZ->container, *self->container,targetArena);
-  //             nodeZ->grad += Ops<T>::hadamard(self->grad, dA, targetArena);
-  //           }
-  //         };
-  //         result.setRequiresGrad(true);
-  //         result.setAutogradNode(nodeResult);
-  //     }
-  //     return result;
-  //   }
+        if (parentA->requiresGrad && parentA->grad) {
+            *(parentA->grad) += ActivationFunctions<T>::sigmoidDerivative(*(self->values), *(self->grad),targetArena); 
+        }
+      };
+      return newNode;
+    }
 
-  //   static inline Matrix tanH(const Matrix& Z,core::Arena *targetArena = nullptr ){
-  //     Matrix result = ActivationFunctions<T>::tanh(Z, targetArena);
-  //     ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
+    static inline N* tanH(N* A,core::Arena *targetArena){
+      if (!A) return nullptr;
+      N* newNode = _createNodeHelper({A}, types::OpType::TANH);
+      _elementWiseHelper(newNode, {A}, targetArena);
 
-  //     if(graph == nullptr) return result;
+      *(newNode->values) = ActivationFunctions<T>::tanh(*(A->values),targetArena); 
+      newNode->backward_fn = [targetArena](N* self) {
+        if (!self->grad || self->parents.empty()) return;
 
-  //     if(Z.getRequiresGrad()){
+        N* parentA = self->parents[0]; 
 
-  //         Node<Matrix>* nodeResult = _createUnaryNodeHelper(Z, result,targetArena, graph, types::OpType::TANH);
-  //         nodeResult->backward_fn = [targetArena](Node<Matrix>* self){
-  //           Node<Matrix>* nodeZ = self->parents[0];
-  //           if(nodeZ != nullptr){
-  //             Matrix dA = ActivationFunctions<T>::tanhDerivative(*nodeZ->container, *self->container,targetArena);
-  //             nodeZ->grad += Ops<T>::hadamard(self->grad, dA, targetArena);
-  //           }
-  //         };
-  //         result.setRequiresGrad(true);
-  //         result.setAutogradNode(nodeResult);
-  //     }
-  //     return result;
-  //   }
+        if (parentA->requiresGrad && parentA->grad) {
+            *(parentA->grad) += ActivationFunctions<T>::tanhDerivative(*(self->values), *(self->grad),targetArena); 
+        }
+      };
+      return newNode;
+    }
 
-  //   static inline Matrix softmax(const Matrix& Z, core::Arena* targetArena = nullptr) {
-  //       Matrix result = ActivationFunctions<T>::softmax(Z, targetArena);
+    static inline N* softmax(N* A, core::Arena* targetArena) {
+      if (!A) return nullptr;
+      N* newNode = _createNodeHelper({A}, types::OpType::SOFTMAX);
+      _elementWiseHelper(newNode, {A}, targetArena);
 
-  //       ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
-  //       if (graph == nullptr) return result;
+      *(newNode->values) = ActivationFunctions<T>::softmax(*(A->values),targetArena); 
+      newNode->backward_fn = [targetArena](N* self) {
+        if (!self->grad || self->parents.empty()) return;
 
-  //       if (Z.getRequiresGrad()) {
-  //           Node<Matrix>* nodeResult = _createUnaryNodeHelper(Z, result,targetArena, graph, types::OpType::SOFTMAX);
+        N* parentA = self->parents[0]; 
 
-  //           nodeResult->backward_fn = [targetArena](Node<Matrix>* self) {
-  //               Node<Matrix>* nodeZ = self->parents[0];
-  //               if (nodeZ != nullptr) {
-  //                   Matrix dZ = ActivationFunctions<T>::softmaxDerivative(
-  //                       *self->container, 
-  //                       self->grad, 
-  //                       targetArena
-  //                   );
-  //                   nodeZ->grad += dZ;
-  //               }
-  //           };
-  //           result.setRequiresGrad(true);
-  //           result.setAutogradNode(nodeResult);
-  //       }
-  //       return result;
-  //   }
+        if (parentA->requiresGrad && parentA->grad) {
+            *(parentA->grad) += ActivationFunctions<T>::softmaxDerivative(*(self->values), *(self->grad),targetArena); 
+        }
+      };
+      return newNode;
+    }
 
-  //   static Matrix mse(const Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr) {
-  //     Matrix lossMatrix = LossFunctions<T>::mse(predict, real, targetArena);
+    static N* mse(N* predict, N* real, core::Arena* targetArena) {
+      if (!real || !predict) return nullptr;
+      N* newNode = _createNodeHelper({predict,real}, types::OpType::MSE_LOSS);
+      newNode->values = new Matrix(1,1,targetArena);
+      if (newNode->requiresGrad) {
+          newNode->grad = new Matrix(1,1,targetArena);
+      }
+      *(newNode->values) = LossFunctions<T>::mse(*(predict->values), *(real->values),targetArena);
 
-  //     ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
-  //     if (graph != nullptr && predict.getRequiresGrad()) {
-  //         Matrix& nonConstPred = const_cast<Matrix&>(predict);
-  //         Node<Matrix>* nodePred = _getOrCreateNode(graph, nonConstPred, targetArena);
+      newNode->backward_fn = [targetArena](N* self) {
+          if (!self->grad || self->parents.empty()) return;
 
-  //         Node<Matrix>* nodeLoss = graph->createNode();
-  //         nodeLoss->requiresGrad = true;
-  //         nodeLoss->parents = {nodePred};
-  //         nodeLoss->operation = types::OpType::MSE_LOSS;
-  //         nodeLoss->grad = Matrix(lossMatrix.getRows(), lossMatrix.getCols(), targetArena);
-  //         nodeLoss->grad.fill(0);
+          N* predNode = self->parents[0];
+          N* realNode = self->parents[1];
 
-  //         lossMatrix.setRequiresGrad(true);
-  //         lossMatrix.setAutogradNode(nodeLoss);
+          if (predNode->requiresGrad && predNode->grad) {
+              T gradScal = self->grad->getValues()[0];
 
-  //         nodeLoss->backward_fn = [nonConstPred, real, targetArena](Node<Matrix>* self) {
-  //             Node<Matrix>* nodeP = self->parents[0];
-  //             if (nodeP != nullptr && nodeP->requiresGrad) {
-  //                 Matrix gradMatrix = LossFunctions<T>::mseDerivative(nonConstPred, real, targetArena);
-  //                 nodeP->grad += gradMatrix;
-  //             }
-  //         };
-  //     }
+              *(predNode->grad) += LossFunctions<T>::mseDerivative(
+                  *(predNode->values), 
+                  *(realNode->values), 
+                  gradScal, 
+                  targetArena
+              );
+          }
+      };
+      return newNode;
+    }
 
-  //     return lossMatrix;
+    static N* bce(N* predict, N* real, core::Arena* targetArena = nullptr) {
+      if (!real || !predict) return nullptr;
+      N* newNode = _createNodeHelper({predict,real}, types::OpType::BCE_LOSS);
+      newNode->values = new Matrix(1,1,targetArena);
+      if (newNode->requiresGrad) {
+          newNode->grad = new Matrix(1,1,targetArena);
+      }
+      *(newNode->values) = LossFunctions<T>::bce(*(predict->values), *(real->values),targetArena);
 
-  //   }
+      newNode->backward_fn = [targetArena](N* self) {
+          if (!self->grad || self->parents.empty()) return;
 
-  //   static Matrix bce(const Matrix& predict, const Matrix& real, core::Arena* targetArena = nullptr) {
-  //     Matrix lossMatrix = LossFunctions<T>::bce(predict, real, targetArena);
+          N* predNode = self->parents[0];
+          N* realNode = self->parents[1];
 
-  //     ComputationGraph<Matrix>* graph = ComputationGraph<Matrix>::getComputationGraph();
-  //     if (graph != nullptr && predict.getRequiresGrad()) {
-  //         Matrix& nonConstPred = const_cast<Matrix&>(predict);
-  //         Node<Matrix>* nodePred = _getOrCreateNode(graph, nonConstPred, targetArena);
+          if (predNode->requiresGrad && predNode->grad) {
+              T gradScal = self->grad->getValues()[0];
 
-  //         Node<Matrix>* nodeLoss = graph->createNode();
-  //         nodeLoss->requiresGrad = true;
-  //         nodeLoss->parents = {nodePred};
-  //         nodeLoss->operation = types::OpType::BCE_LOSS;
-        
-  //         nodeLoss->grad = Matrix(lossMatrix.getRows(), lossMatrix.getCols(), targetArena);
-  //         nodeLoss->grad.fill(0);
-
-  //         lossMatrix.setRequiresGrad(true);
-  //         lossMatrix.setAutogradNode(nodeLoss);
-
-  //         nodeLoss->backward_fn = [predict, real, targetArena](Node<Matrix>* self) {
-  //             Node<Matrix>* nodeP = self->parents[0];
-  //             if (nodeP != nullptr && nodeP->requiresGrad) {
-  //                 Matrix gradMatrix = LossFunctions<T>::bceDerivative(predict, real, targetArena);
-  //                 nodeP->grad += gradMatrix;
-  //             }
-  //         };
-  //     }
-  //     return lossMatrix;
-
-  //   }
+              *(predNode->grad) += LossFunctions<T>::bceDerivative(
+                  *(predNode->values), 
+                  *(realNode->values), 
+                  gradScal, 
+                  targetArena
+              );
+          }
+      };
+      return newNode;
+    }
   };
 }

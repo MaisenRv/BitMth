@@ -490,4 +490,299 @@ BIT_TEST_CASE(OpsMul) {
   BIT_ASSERT_EQ(nullptr, nodeNoGrad->grad);
 }
 
+BIT_TEST_CASE(OpsRelu) {
+    Graph graph;
+    RecordGraph rGraph(graph);
+    Arena arena(Arena::MB(2));
+
+    // =============================================================
+    // 1. Forward Pass
+    // A: (2 x 3) con valores mixtos positivos, negativos y cero
+    // =============================================================
+    Node* nodeA = graph.createNode();
+    nodeA->values = new Matrix(2, 3, &arena);
+    nodeA->values->getValues()[0] = -1.5; nodeA->values->getValues()[1] =  0.0; nodeA->values->getValues()[2] = 2.0;
+    nodeA->values->getValues()[3] =  3.0; nodeA->values->getValues()[4] = -0.5; nodeA->values->getValues()[5] = 0.0;
+    nodeA->grad = new Matrix(2, 3, &arena);
+    nodeA->requiresGrad = true;
+
+    Node* nodeR = BitMth::ia::Ops<double>::relu(nodeA, &arena);
+
+    // Verificación Forward
+    Matrix expectedForward(2, 3, &arena);
+    expectedForward.getValues()[0] = 0.0; expectedForward.getValues()[1] = 0.0; expectedForward.getValues()[2] = 2.0;
+    expectedForward.getValues()[3] = 3.0; expectedForward.getValues()[4] = 0.0; expectedForward.getValues()[5] = 0.0;
+
+    BIT_ASSERT_TRUE(expectedForward.isApprox(*(nodeR->values)));
+    BIT_ASSERT_EQ(size_t(1), nodeR->parents.size());
+    BIT_ASSERT_EQ(nodeA, nodeR->parents[0]);
+    BIT_ASSERT_TRUE(nodeR->requiresGrad);
+    BIT_ASSERT_EQ(size_t(BitMth::ia::types::OpType::RELU), size_t(nodeR->operation));
+
+    // =============================================================
+    // 2. Backward Pass Básico
+    // dL/dY = Matriz de unos (1.0)
+    // dA = dY * (A > 0 ? 1 : 0)
+    // =============================================================
+    nodeR->grad->setWith(1.0);
+    nodeR->backward_fn(nodeR);
+
+    Matrix expectedGradA(2, 3, &arena);
+    expectedGradA.getValues()[0] = 0.0; expectedGradA.getValues()[1] = 0.0; expectedGradA.getValues()[2] = 1.0;
+    expectedGradA.getValues()[3] = 1.0; expectedGradA.getValues()[4] = 0.0; expectedGradA.getValues()[5] = 0.0;
+
+    BIT_ASSERT_TRUE(expectedGradA.isApprox(*(nodeA->grad)));
+
+    // =============================================================
+    // 3. Acumulación de Gradientes
+    // dL/dY = 2.0 -> Nuevo delta dA = 2.0 * (A > 0)
+    // Acumulado = Grad1 + Grad2
+    // =============================================================
+    nodeR->grad->setWith(2.0);
+    nodeR->backward_fn(nodeR);
+
+    Matrix expectedAccumGradA(2, 3, &arena);
+    expectedAccumGradA.getValues()[0] = 0.0; expectedAccumGradA.getValues()[1] = 0.0; expectedAccumGradA.getValues()[2] = 3.0;
+    expectedAccumGradA.getValues()[3] = 3.0; expectedAccumGradA.getValues()[4] = 0.0; expectedAccumGradA.getValues()[5] = 0.0;
+
+    BIT_ASSERT_TRUE(expectedAccumGradA.isApprox(*(nodeA->grad)));
+
+    // =============================================================
+    // 4. Entradas sin Gradiente (requiresGrad = false)
+    // =============================================================
+    Node* nodeNoGrad = graph.createNode();
+    nodeNoGrad->values = new Matrix(1, 2, &arena);
+    nodeNoGrad->values->setWith(1.0);
+    nodeNoGrad->requiresGrad = false;
+
+    Node* nodeNoGradResult = BitMth::ia::Ops<double>::relu(nodeNoGrad, &arena);
+    BIT_ASSERT_FALSE(nodeNoGradResult->requiresGrad);
+}
+
+BIT_TEST_CASE(OpsSigmoid) {
+    Graph graph;
+    RecordGraph rGraph(graph);
+    Arena arena(Arena::MB(2));
+
+    Node* nodeA = graph.createNode();
+    nodeA->values = new Matrix(1, 2, &arena);
+    nodeA->values->getValues()[0] = 0.0;  // sigmoid(0) = 0.5
+    nodeA->values->getValues()[1] = 2.0;  // sigmoid(2) = 0.8807970779778823
+    nodeA->grad = new Matrix(1, 2, &arena);
+    nodeA->requiresGrad = true;
+
+    Node* nodeR = BitMth::ia::Ops<double>::sigmoid(nodeA, &arena);
+
+    // Forward
+    double sig0 = 0.5;
+    double sig2 = 1.0 / (1.0 + std::exp(-2.0));
+    Matrix expectedForward(1, 2, &arena);
+    expectedForward.getValues()[0] = sig0;
+    expectedForward.getValues()[1] = sig2;
+
+    BIT_ASSERT_TRUE(expectedForward.isApprox(*(nodeR->values)));
+    BIT_ASSERT_EQ(size_t(BitMth::ia::types::OpType::SIGMOID), size_t(nodeR->operation));
+
+    // Backward: dZ = grad * A * (1 - A)
+    nodeR->grad->setWith(1.0);
+    nodeR->backward_fn(nodeR);
+
+    Matrix expectedGradA(1, 2, &arena);
+    expectedGradA.getValues()[0] = 1.0 * sig0 * (1.0 - sig0); // 0.25
+    expectedGradA.getValues()[1] = 1.0 * sig2 * (1.0 - sig2);
+
+    BIT_ASSERT_TRUE(expectedGradA.isApprox(*(nodeA->grad)));
+
+    // Acumulación
+    nodeR->backward_fn(nodeR); // Acumula el mismo gradiente una segunda vez
+    Matrix expectedAccumGradA(1, 2, &arena);
+    expectedAccumGradA.getValues()[0] = 2.0 * (sig0 * (1.0 - sig0));
+    expectedAccumGradA.getValues()[1] = 2.0 * (sig2 * (1.0 - sig2));
+
+    BIT_ASSERT_TRUE(expectedAccumGradA.isApprox(*(nodeA->grad)));
+}
+
+BIT_TEST_CASE(OpsTanh) {
+    Graph graph;
+    RecordGraph rGraph(graph);
+    Arena arena(Arena::MB(2));
+
+    Node* nodeA = graph.createNode();
+    nodeA->values = new Matrix(1, 2, &arena);
+    nodeA->values->getValues()[0] = 0.0; // tanh(0) = 0.0
+    nodeA->values->getValues()[1] = 1.0; // tanh(1) = 0.7615941559557649
+    nodeA->grad = new Matrix(1, 2, &arena);
+    nodeA->requiresGrad = true;
+
+    Node* nodeR = BitMth::ia::Ops<double>::tanH(nodeA, &arena);
+
+    // Forward
+    double tanh0 = 0.0;
+    double tanh1 = std::tanh(1.0);
+    Matrix expectedForward(1, 2, &arena);
+    expectedForward.getValues()[0] = tanh0;
+    expectedForward.getValues()[1] = tanh1;
+
+    BIT_ASSERT_TRUE(expectedForward.isApprox(*(nodeR->values)));
+    BIT_ASSERT_EQ(size_t(BitMth::ia::types::OpType::TANH), size_t(nodeR->operation));
+
+    // Backward: dZ = grad * (1 - A^2)
+    nodeR->grad->setWith(1.0);
+    nodeR->backward_fn(nodeR);
+
+    Matrix expectedGradA(1, 2, &arena);
+    expectedGradA.getValues()[0] = 1.0 * (1.0 - tanh0 * tanh0); // 1.0
+    expectedGradA.getValues()[1] = 1.0 * (1.0 - tanh1 * tanh1);
+
+    BIT_ASSERT_TRUE(expectedGradA.isApprox(*(nodeA->grad)));
+
+    // Acumulación
+    nodeR->backward_fn(nodeR);
+    Matrix expectedAccumGradA(1, 2, &arena);
+    expectedAccumGradA.getValues()[0] = 2.0 * (1.0 - tanh0 * tanh0);
+    expectedAccumGradA.getValues()[1] = 2.0 * (1.0 - tanh1 * tanh1);
+
+    BIT_ASSERT_TRUE(expectedAccumGradA.isApprox(*(nodeA->grad)));
+}
+
+BIT_TEST_CASE(OpsSoftmax) {
+    Graph graph;
+    RecordGraph rGraph(graph);
+    Arena arena(Arena::MB(2));
+
+    Node* nodeA = graph.createNode();
+    nodeA->values = new Matrix(1, 3, &arena);
+    nodeA->values->getValues()[0] = 1.0;
+    nodeA->values->getValues()[1] = 2.0;
+    nodeA->values->getValues()[2] = 3.0;
+    nodeA->grad = new Matrix(1, 3, &arena);
+    nodeA->requiresGrad = true;
+
+    Node* nodeR = BitMth::ia::Ops<double>::softmax(nodeA, &arena);
+
+    // Forward calculado manualmente
+    double exp1 = std::exp(1.0 - 3.0);
+    double exp2 = std::exp(2.0 - 3.0);
+    double exp3 = std::exp(3.0 - 3.0);
+    double sum = exp1 + exp2 + exp3;
+
+    Matrix expectedForward(1, 3, &arena);
+    expectedForward.getValues()[0] = exp1 / sum;
+    expectedForward.getValues()[1] = exp2 / sum;
+    expectedForward.getValues()[2] = exp3 / sum;
+
+    BIT_ASSERT_TRUE(expectedForward.isApprox(*(nodeR->values)));
+    BIT_ASSERT_EQ(size_t(BitMth::ia::types::OpType::SOFTMAX), size_t(nodeR->operation));
+
+    // Backward Pass con gradOut = [1.0, 0.0, 0.0]
+    // dZ_i = A_i * (grad_i - dotProduct) donde dotProduct = grad * A = 1.0 * A_0
+    nodeR->grad->getValues()[0] = 1.0;
+    nodeR->grad->getValues()[1] = 0.0;
+    nodeR->grad->getValues()[2] = 0.0;
+    nodeR->backward_fn(nodeR);
+
+    double a0 = expectedForward.getValues()[0];
+    double a1 = expectedForward.getValues()[1];
+    double a2 = expectedForward.getValues()[2];
+    double dotProduct = 1.0 * a0;
+
+    Matrix expectedGradA(1, 3, &arena);
+    expectedGradA.getValues()[0] = a0 * (1.0 - dotProduct);
+    expectedGradA.getValues()[1] = a1 * (0.0 - dotProduct);
+    expectedGradA.getValues()[2] = a2 * (0.0 - dotProduct);
+
+    BIT_ASSERT_TRUE(expectedGradA.isApprox(*(nodeA->grad)));
+}
+
+BIT_TEST_CASE(OpsMSELoss) {
+    Graph graph;
+    RecordGraph rGraph(graph);
+    Arena arena(Arena::MB(2));
+
+    // Predicción (1x3) y Real (1x3)
+    Node* nodePred = graph.createNode();
+    nodePred->values = new Matrix(1, 3, &arena);
+    nodePred->values->getValues()[0] = 2.0;
+    nodePred->values->getValues()[1] = 3.0;
+    nodePred->values->getValues()[2] = 4.0;
+    nodePred->grad = new Matrix(1, 3, &arena);
+    nodePred->requiresGrad = true;
+
+    Node* nodeReal = graph.createNode();
+    nodeReal->values = new Matrix(1, 3, &arena);
+    nodeReal->values->getValues()[0] = 1.0;
+    nodeReal->values->getValues()[1] = 1.0;
+    nodeReal->values->getValues()[2] = 1.0;
+
+    // Forward Pass
+    Node* nodeR = BitMth::ia::Ops<double>::mse(nodePred, nodeReal, &arena);
+
+    // Forward calculado manualmente
+    // Diff = [1.0, 2.0, 3.0] -> Cuadrados = [1.0, 4.0, 9.0] -> Suma = 14.0 -> MSE (N=3) = 14.0 / 3.0
+    Matrix expectedForward(1, 1, &arena);
+    expectedForward.getValues()[0] = 14.0 / 3.0;
+
+    BIT_ASSERT_TRUE(expectedForward.isApprox(*(nodeR->values)));
+    BIT_ASSERT_EQ(size_t(BitMth::ia::types::OpType::MSE_LOSS), size_t(nodeR->operation));
+
+    // Backward Pass con gradOut = [1.0] (Semilla del gradiente en la raíz 1x1)
+    // dMSE / dPred = (2 / N) * (pred - real) * gradScal
+    nodeR->grad = new Matrix(1, 1, &arena);
+    nodeR->grad->getValues()[0] = 1.0;
+    nodeR->backward_fn(nodeR);
+
+    double invN = (2.0 * 1.0) / 3.0; // (2 * gradScal) / N
+    Matrix expectedGradPred(1, 3, &arena);
+    expectedGradPred.getValues()[0] = (2.0 - 1.0) * invN; // 2/3
+    expectedGradPred.getValues()[1] = (3.0 - 1.0) * invN; // 4/3
+    expectedGradPred.getValues()[2] = (4.0 - 1.0) * invN; // 6/3 = 2.0
+
+    BIT_ASSERT_TRUE(expectedGradPred.isApprox(*(nodePred->grad)));
+}
+
+BIT_TEST_CASE(OpsBCELoss) {
+    Graph graph;
+    RecordGraph rGraph(graph);
+    Arena arena(Arena::MB(5));
+
+    // Predicción (1x2) y Real (1x2)
+    Node* nodePred = graph.createNode();
+    nodePred->values = new Matrix(1, 2, &arena);
+    nodePred->values->getValues()[0] = 0.8;
+    nodePred->values->getValues()[1] = 0.2;
+    nodePred->grad = new Matrix(1, 2, &arena);
+    nodePred->requiresGrad = true;
+
+    Node* nodeReal = graph.createNode();
+    nodeReal->values = new Matrix(1, 2, &arena);
+    nodeReal->values->getValues()[0] = 1.0;
+    nodeReal->values->getValues()[1] = 0.0;
+
+    // Forward Pass
+    Node* nodeR = BitMth::ia::Ops<double>::bce(nodePred, nodeReal, &arena);
+
+    // Forward calculado manualmente
+    // Pos 0: 1.0 * ln(0.8)
+    // Pos 1: (1.0 - 0.0) * ln(1.0 - 0.2) = ln(0.8)
+    // Loss = -(ln(0.8) + ln(0.8)) / 2 = -ln(0.8)
+    Matrix expectedForward(1, 1, &arena);
+    expectedForward.getValues()[0] = -std::log(0.8);
+
+    BIT_ASSERT_TRUE(expectedForward.isApprox(*(nodeR->values)));
+    BIT_ASSERT_EQ(size_t(BitMth::ia::types::OpType::BCE_LOSS), size_t(nodeR->operation));
+
+    // Backward Pass con gradOut = [1.0]
+    // dBCE / dPred = ((pred - real) / (pred * (1 - pred))) * (gradScal / N)
+    nodeR->grad = new Matrix(1, 1, &arena);
+    nodeR->grad->getValues()[0] = 1.0;
+    nodeR->backward_fn(nodeR);
+
+    double scale = 1.0 / 2.0; // gradScal / N (donde N = 2)
+    Matrix expectedGradPred(1, 2, &arena);
+    expectedGradPred.getValues()[0] = ((0.8 - 1.0) / (0.8 * 0.2)) * scale; // -0.625
+    expectedGradPred.getValues()[1] = ((0.2 - 0.0) / (0.2 * 0.8)) * scale; //  0.625
+
+    BIT_ASSERT_TRUE(expectedGradPred.isApprox(*(nodePred->grad)));
+}
+
 BIT_GROUP_END()
