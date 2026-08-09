@@ -7,22 +7,23 @@ namespace BitMth::ia::types{
 
     // === SCALAR - MATRIX & MATRIX - MATRIX (Element-Wise / Binary) ===
     ADD,   // Suma (Matrix + Matrix o Matrix + Scalar)
+    ADD_VECTOR,
     SUB,   // Resta (Matrix - Matrix o Matrix - Scalar)
     HADAMARD,// Multiplicación elemento a elemento
-    // SCALE, // Multiplicación por escalar
+    // // SCALE, // Multiplicación por escalar
 
-    // === MATRIX - MATRIX (Linear Algebra) ===
+    // // === MATRIX - MATRIX (Linear Algebra) ===
     MUL, // Multiplicación de matrices (A x B)
 
-    // === UNARY ACTIVATIONS & NORM (Single Matrix) ===
+    // // === UNARY ACTIVATIONS & NORM (Single Matrix) ===
     RELU,
-    // GELU,
+    // // GELU,
     SIGMOID,
     TANH,
     SOFTMAX,
-    // LAYERNORM,
+    // // LAYERNORM,
 
-    // === LOSSES ===
+    // // === LOSSES ===
     MSE_LOSS,
     BCE_LOSS    
 

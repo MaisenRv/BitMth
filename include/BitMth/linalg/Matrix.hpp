@@ -659,6 +659,30 @@ namespace BitMth::linalg{
             }
             return result;
         }
+        static Matrix<T> addRowVectorS(const Matrix<T>& matrixA, const Matrix<T>& rowVector, core::Arena* targetArena = nullptr) {
+            CHECK_ERROR_MATRIX(
+                rowVector.rows != 1 || rowVector.cols != matrixA.cols,
+                "Matrix operator (addRowVector)",
+                "Dimensions mismatch: rowVector must be (1 x cols)"
+            );
+
+            Matrix<T> result(matrixA.rows, matrixA.cols, matrixA.stride, targetArena);
+
+            const size_t aRowJump = matrixA.getRowJump();
+            const size_t resRowJump = result.getRowJump();
+            const T* const vecData = rowVector.m;
+
+            for (size_t i = 0; i < matrixA.rows; i++) {
+                const T* const currentRow = &matrixA.m[i * aRowJump];
+                T* const resCurrentRow = &result.m[i * resRowJump];
+
+                for (size_t j = 0; j < matrixA.cols; j++) {
+                    resCurrentRow[j] = currentRow[j] + vecData[j];
+                }
+            }
+
+            return result;
+        }
 
         // Utils
         void clear(){ std::fill_n(m, numElements, T(0)); }
@@ -686,7 +710,6 @@ namespace BitMth::linalg{
         friend std::ostream& operator<<(std::ostream& os, const Matrix<T>& matrix) {
             return utils::show<T>(os, matrix, 4, 8);
         }
-
 
         void print(int precision = 4, int width = 8) const {
            utils::show<T>(std::cout, *this, precision, width) << std::endl;

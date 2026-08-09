@@ -51,17 +51,6 @@ namespace BitMth::ia{
             );
         }
       }
-  //     static Node<Matrix>* _createUnaryNodeHelper(const Matrix& in, Matrix& out,core::Arena *arena, ComputationGraph<Matrix>* graph, types::OpType type){
-  //       Node<Matrix>* nodeIn = _getOrCreateNode(graph, const_cast<Matrix&>(in),arena);
-
-  //       Node<Matrix>* nodeResult = graph->createNode();
-  //       nodeResult->requiresGrad = true;
-  //       nodeResult->parents = {nodeIn};
-  //       nodeResult->operation = type;
-  //       nodeResult->container = &out;
-  //       nodeResult->grad = Matrix(out.getRows(),out.getCols(),arena);
-  //       return nodeResult;
-  //     }
     public:
 
     static inline N* add(const std::vector<N*>& inputs, core::Arena* targetArena) {
@@ -85,6 +74,36 @@ namespace BitMth::ia{
       return newNode;
 
     }
+    static N* addVector(N* matNode, N* vecNode, core::Arena* targetArena = nullptr) {
+      if (!matNode || !vecNode || !matNode->values || !vecNode->values) return nullptr;
+
+      N* newNode = _createNodeHelper({matNode, vecNode}, types::OpType::ADD_VECTOR);
+      _elementWiseHelper(newNode, {matNode, vecNode}, targetArena);
+
+      *(newNode->values) = Matrix::addRowVectorS(*(matNode->values), *(vecNode->values), targetArena);
+
+      newNode->backward_fn = [targetArena](N* self) {
+          if (!self || !self->grad || self->parents.size() < 2) return;
+
+          N* matParent = self->parents[0];
+          N* vecParent = self->parents[1];
+
+          if (matParent && matParent->requiresGrad && matParent->grad) {
+              *(matParent->grad) += *(self->grad);
+          }
+
+          if (vecParent && vecParent->requiresGrad && vecParent->grad) {
+              if (vecParent->values->getRows() == 1) {
+                  *(vecParent->grad) += self->grad->reduceSumRows(targetArena);
+              } else if (vecParent->values->getCols() == 1) {
+                  *(vecParent->grad) += self->grad->reduceSumCols(targetArena);
+              }
+          }
+      };
+
+      return newNode;
+    }
+
     
     static inline N* sub(const std::vector<N*>& inputs,core::Arena *targetArena){
       if (inputs.empty()) return nullptr;

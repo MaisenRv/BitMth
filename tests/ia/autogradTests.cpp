@@ -142,6 +142,115 @@ BIT_TEST_CASE(OpsAdd) {
   BIT_ASSERT_EQ(nullptr, nodeNoGrad->grad);
 }
 
+BIT_TEST_CASE(OpsAddVector) {
+    Graph graph;
+    RecordGraph rGraph(graph);
+    Arena arena(Arena::MB(2));
+
+    // ==========================================
+    // 1. TEST FORWARD Y BACKWARD (MATRIZ + VECTOR FILA)
+    // ==========================================
+    // Matriz de 3x2 llena de 5.0
+    Node* matNode = graph.createNode();
+    matNode->values = new Matrix(3, 2, &arena);
+    matNode->values->setWith(5.0);
+    matNode->grad = new Matrix(3, 2, &arena);
+    matNode->requiresGrad = true;
+
+    // Vector Fila de 1x2 lleno de 3.0
+    Node* vecNode = graph.createNode();
+    vecNode->values = new Matrix(1, 2, &arena);
+    vecNode->values->setWith(3.0);
+    vecNode->grad = new Matrix(1, 2, &arena);
+    vecNode->requiresGrad = true;
+
+    // Operación: Matriz (3x2) + Vector (1x2)
+    Node* nodeR = BitMth::ia::Ops<double>::addVector(matNode, vecNode, &arena);
+
+    // Verificación de Forward: Matriz resultante debe tener 5.0 + 3.0 = 8.0
+    Matrix expectedForward(3, 2, &arena);
+    expectedForward.setWith(8.0);
+
+    BIT_ASSERT_TRUE(expectedForward.isApprox(*(nodeR->values)));
+    BIT_ASSERT_EQ(size_t(2), nodeR->parents.size());
+    BIT_ASSERT_EQ(matNode, nodeR->parents[0]);
+    BIT_ASSERT_EQ(vecNode, nodeR->parents[1]);
+    BIT_ASSERT_TRUE(nodeR->requiresGrad);
+    BIT_ASSERT_EQ(
+        size_t(BitMth::ia::types::OpType::ADD_VECTOR),
+        size_t(nodeR->operation)
+    );
+
+    // --- Primer Backward ---
+    // Simular un gradiente entrante de 2.0 en toda la matriz (3x2)
+    nodeR->grad->setWith(2.0);
+    nodeR->backward_fn(nodeR);
+
+    // Gradiente de la matriz: Copia directa 1:1 -> 2.0
+    Matrix expectedMatGrad(3, 2, &arena);
+    expectedMatGrad.setWith(2.0);
+    BIT_ASSERT_TRUE(expectedMatGrad.isApprox(*(matNode->grad)));
+
+    // Gradiente del vector fila (1x2): Suma a lo largo de las 3 filas
+    // Cada elemento del vector recibió 2.0 en 3 filas -> 2.0 * 3 = 6.0
+    Matrix expectedVecGrad(1, 2, &arena);
+    expectedVecGrad.setWith(6.0);
+    BIT_ASSERT_TRUE(expectedVecGrad.isApprox(*(vecNode->grad)));
+
+    // ==========================================
+    // 2. ACUMULACIÓN DE GRADIENTES
+    // ==========================================
+    // Simular una segunda llamada al backward con gradiente 1.0
+    nodeR->grad->setWith(1.0);
+    nodeR->backward_fn(nodeR);
+
+    // Gradiente acumulado matriz: 2.0 + 1.0 = 3.0
+    Matrix expectedMatAccum(3, 2, &arena);
+    expectedMatAccum.setWith(3.0);
+    BIT_ASSERT_TRUE(expectedMatAccum.isApprox(*(matNode->grad)));
+
+    // Gradiente acumulado vector: 6.0 + (1.0 * 3) = 9.0
+    Matrix expectedVecAccum(1, 2, &arena);
+    expectedVecAccum.setWith(9.0);
+    BIT_ASSERT_TRUE(expectedVecAccum.isApprox(*(vecNode->grad)));
+
+    // ==========================================
+    // 3. MEZCLA DE NODOS CON Y SIN GRADIENTE
+    // ==========================================
+    Node* matGrad = graph.createNode();
+    matGrad->values = new Matrix(2, 3, &arena);
+    matGrad->values->setWith(10.0);
+    matGrad->grad = new Matrix(2, 3, &arena);
+    matGrad->requiresGrad = true;
+
+    // Vector de sesgo constante (sin gradiente)
+    Node* vecNoGrad = graph.createNode();
+    vecNoGrad->values = new Matrix(1, 3, &arena);
+    vecNoGrad->values->setWith(1.0);
+    vecNoGrad->grad = nullptr;
+    vecNoGrad->requiresGrad = false;
+
+    Node* nodeMixed = BitMth::ia::Ops<double>::addVector(matGrad, vecNoGrad, &arena);
+
+    // El nodo resultante requiere gradiente porque matGrad lo requiere
+    BIT_ASSERT_TRUE(nodeMixed->requiresGrad);
+
+    // Forward: 10.0 + 1.0 = 11.0
+    Matrix expectedMixedForward(2, 3, &arena);
+    expectedMixedForward.setWith(11.0);
+    BIT_ASSERT_TRUE(expectedMixedForward.isApprox(*(nodeMixed->values)));
+
+    // Backward en grafo mixto
+    nodeMixed->grad->setWith(4.0);
+    nodeMixed->backward_fn(nodeMixed);
+
+    Matrix expectedMixedMatGrad(2, 3, &arena);
+    expectedMixedMatGrad.setWith(4.0);
+
+    BIT_ASSERT_TRUE(expectedMixedMatGrad.isApprox(*(matGrad->grad)));
+    BIT_ASSERT_EQ(nullptr, vecNoGrad->grad);
+}
+
 BIT_TEST_CASE(OpsSub) {
   Graph graph;
   RecordGraph rGraph(graph);
