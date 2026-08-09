@@ -38,17 +38,17 @@ BIT_TEST_CASE(MSEDerivativeBatch) {
     real.getValues()[0] = 1.0f; real.getValues()[1] = 0.0f;
     real.getValues()[2] = 1.0f; real.getValues()[3] = 2.0f;
 
-    // dMSE = (pred - real) / N  donde N = 4 (invN = 0.25)
-    // Diff: [0, 2, 2, 2] * 0.25 -> [0.0, 0.5, 0.5, 0.5]
+    // dMSE = (pred - real) / N  donde N = 2 (invN = 0.5)
+    // Diff: [0, 2, 2, 2] * 0.5 -> [0.0, 1, 1, 1]
     Matrix dLoss = Loss::mseDerivative(predict, real);
 
     BIT_ASSERT_EQ(dLoss.getRows(), static_cast<size_t>(2));
     BIT_ASSERT_EQ(dLoss.getCols(), static_cast<size_t>(2));
 
     BIT_EXPECT_TRUE(BitMth::utils::isClose(dLoss.getValues()[0], 0.0f));
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dLoss.getValues()[1], 0.5f));
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dLoss.getValues()[2], 0.5f));
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dLoss.getValues()[3], 0.5f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dLoss.getValues()[1], 1.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dLoss.getValues()[2], 1.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dLoss.getValues()[3], 1.0f));
 }
 
 BIT_TEST_CASE(BCELossBatch) {

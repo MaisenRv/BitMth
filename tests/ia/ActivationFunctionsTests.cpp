@@ -24,26 +24,6 @@ BIT_TEST_CASE(ReluActivation) {
     BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[2], 3.5f));
 }
 
-BIT_TEST_CASE(ReluDerivative) {
-    using Act = BitMth::ia::ActivationFunctions<float>;
-    using Matrix = BitMth::linalg::Matrix<float>;
-
-    Matrix Z(1, 3);
-    Z.getValues()[0] = -1.5f;
-    Z.getValues()[1] =  0.0f;
-    Z.getValues()[2] =  2.0f;
-
-    Matrix A = Act::relu(Z);
-    Matrix dZ = Act::reluDerivative(Z, A);
-
-    BIT_ASSERT_EQ(dZ.getRows(), static_cast<size_t>(1));
-    BIT_ASSERT_EQ(dZ.getCols(), static_cast<size_t>(3));
-
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[0], 0.0f));
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[1], 0.0f));
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[2], 1.0f));
-}
-
 BIT_TEST_CASE(SigmoidActivation) {
     using Act = BitMth::ia::ActivationFunctions<double>;
     using Matrix = BitMth::linalg::Matrix<double>;
@@ -63,19 +43,6 @@ BIT_TEST_CASE(SigmoidActivation) {
     BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[1], 0.880797));
 }
 
-BIT_TEST_CASE(SigmoidDerivative) {
-    using Act = BitMth::ia::ActivationFunctions<double>;
-    using Matrix = BitMth::linalg::Matrix<double>;
-
-    Matrix Z(1, 1);
-    Z.getValues()[0] = 0.0;
-
-    Matrix A = Act::sigmoid(Z); // A = 0.5
-    Matrix dA = Act::sigmoidDerivative(Z, A); // a * (1 - a) = 0.5 * 0.5 = 0.25
-
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[0], 0.25));
-}
-
 BIT_TEST_CASE(TanhActivation) {
     using Act = BitMth::ia::ActivationFunctions<float>;
     using Matrix = BitMth::linalg::Matrix<float>;
@@ -90,19 +57,6 @@ BIT_TEST_CASE(TanhActivation) {
     BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[0], 0.0f));
     // tanh(1) ≈ 0.761594f
     BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[1], 0.761594f));
-}
-
-BIT_TEST_CASE(TanhDerivative) {
-    using Act = BitMth::ia::ActivationFunctions<float>;
-    using Matrix = BitMth::linalg::Matrix<float>;
-
-    Matrix Z(1, 1);
-    Z.getValues()[0] = 0.0f;
-
-    Matrix A = Act::tanh(Z); // A = 0
-    Matrix dA = Act::tanhDerivative(Z, A); // 1 - 0^2 = 1
-
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[0], 1.0f));
 }
 
 BIT_TEST_CASE(SoftmaxActivation) {
@@ -191,32 +145,6 @@ BIT_TEST_CASE(ReluBatch) {
     BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[5], 0.0f));
 }
 
-BIT_TEST_CASE(ReluDerivativeBatch) {
-    using Act = BitMth::ia::ActivationFunctions<float>;
-    using Matrix = BitMth::linalg::Matrix<float>;
-
-    Matrix Z(2, 3);
-    Z.getValues()[0] = -5.0f; Z.getValues()[1] = 0.0f; Z.getValues()[2] = 3.0f; // Fila 0
-    Z.getValues()[3] =  1.2f; Z.getValues()[4] = -0.1f; Z.getValues()[5] = 0.0f; // Fila 1
-
-    Matrix A = Act::relu(Z);
-    Matrix dZ = Act::reluDerivative(Z, A);
-
-    BIT_ASSERT_EQ(dZ.getRows(), size_t(2));
-    BIT_ASSERT_EQ(dZ.getCols(), size_t(3));
-
-    // Fila 0
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[0], 0.0f));
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[1], 0.0f));
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[2], 1.0f));
-
-    // Fila 1
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[3], 1.0f));
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[4], 0.0f));
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[5], 0.0f));
-}
-
-
 BIT_TEST_CASE(SigmoidBatch) {
     using Act = BitMth::ia::ActivationFunctions<double>;
     using Matrix = BitMth::linalg::Matrix<double>;
@@ -239,25 +167,6 @@ BIT_TEST_CASE(SigmoidBatch) {
     BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[3], 0.5));
 }
 
-BIT_TEST_CASE(SigmoidDerivativeBatch) {
-    using Act = BitMth::ia::ActivationFunctions<double>;
-    using Matrix = BitMth::linalg::Matrix<double>;
-
-    Matrix A(2, 2);
-    A.getValues()[0] = 0.5; A.getValues()[1] = 1.0; // Fila 0
-    A.getValues()[2] = 0.0; A.getValues()[3] = 0.2; // Fila 1
-
-    Matrix Z(2, 2);
-    Matrix dA = Act::sigmoidDerivative(Z, A);
-
-    // Formula: A * (1 - A)
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[0], 0.25)); // 0.5 * 0.5
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[1], 0.00)); // 1.0 * 0.0
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[2], 0.00)); // 0.0 * 1.0
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[3], 0.16)); // 0.2 * 0.8
-}
-
-
 BIT_TEST_CASE(TanhBatch) {
     using Act = BitMth::ia::ActivationFunctions<float>;
     using Matrix = BitMth::linalg::Matrix<float>;
@@ -272,24 +181,6 @@ BIT_TEST_CASE(TanhBatch) {
     BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[1],  0.761594f));
     BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[2], -0.761594f));
     BIT_EXPECT_TRUE(BitMth::utils::isClose(res.getValues()[3],  0.0f));
-}
-
-BIT_TEST_CASE(TanhDerivativeBatch) {
-    using Act = BitMth::ia::ActivationFunctions<float>;
-    using Matrix = BitMth::linalg::Matrix<float>;
-
-    Matrix A(2, 2);
-    A.getValues()[0] = 0.0f; A.getValues()[1] = 0.5f;  // Fila 0
-    A.getValues()[2] = 1.0f; A.getValues()[3] = -0.5f; // Fila 1
-
-    Matrix Z(2, 2);
-    Matrix dA = Act::tanhDerivative(Z, A);
-
-    // Formula: 1 - A^2
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[0], 1.00f)); // 1 - 0
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[1], 0.75f)); // 1 - 0.25
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[2], 0.00f)); // 1 - 1
-    BIT_EXPECT_TRUE(BitMth::utils::isClose(dA.getValues()[3], 0.75f)); // 1 - 0.25
 }
 
 BIT_TEST_CASE(SoftmaxBatch) {
@@ -343,6 +234,136 @@ BIT_TEST_CASE(SoftmaxDerivativeBatch) {
     // Fila 1: dot = 0.2, dZ_10 = 0.8*(0 - 0.2) = -0.16, dZ_11 = 0.2*(1 - 0.2) = 0.16
     BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[2], -0.16f));
     BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[3],  0.16f));
+}
+BIT_TEST_CASE(ReluDerivative) {
+    using Act = BitMth::ia::ActivationFunctions<float>;
+    using Matrix = BitMth::linalg::Matrix<float>;
+
+    Matrix Z(1, 3);
+    Z.getValues()[0] = -1.5f;
+    Z.getValues()[1] =  0.0f;
+    Z.getValues()[2] =  2.0f;
+
+    Matrix A = Act::relu(Z); // A = [0.0, 0.0, 2.0]
+    
+    // Gradiente de entrada simular dL/dA = [1.0, 1.0, 1.0]
+    Matrix gradOut(1, 3);
+    gradOut.getValues()[0] = 1.0f;
+    gradOut.getValues()[1] = 1.0f;
+    gradOut.getValues()[2] = 1.0f;
+
+    Matrix dZ = Act::reluDerivative(A, gradOut);
+
+    BIT_ASSERT_EQ(dZ.getRows(), static_cast<size_t>(1));
+    BIT_ASSERT_EQ(dZ.getCols(), static_cast<size_t>(3));
+
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[0], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[1], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[2], 1.0f));
+}
+
+BIT_TEST_CASE(SigmoidDerivative) {
+    using Act = BitMth::ia::ActivationFunctions<double>;
+    using Matrix = BitMth::linalg::Matrix<double>;
+
+    Matrix Z(1, 1);
+    Z.getValues()[0] = 0.0;
+
+    Matrix A = Act::sigmoid(Z); // A = 0.5
+    
+    Matrix gradOut(1, 1);
+    gradOut.getValues()[0] = 1.0;
+
+    Matrix dZ = Act::sigmoidDerivative(A, gradOut); // gradOut * a * (1 - a) = 1.0 * 0.25 = 0.25
+
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[0], 0.25));
+}
+
+BIT_TEST_CASE(TanhDerivative) {
+    using Act = BitMth::ia::ActivationFunctions<float>;
+    using Matrix = BitMth::linalg::Matrix<float>;
+
+    Matrix Z(1, 1);
+    Z.getValues()[0] = 0.0f;
+
+    Matrix A = Act::tanh(Z); // A = 0.0
+    
+    Matrix gradOut(1, 1);
+    gradOut.getValues()[0] = 1.0f;
+
+    Matrix dZ = Act::tanhDerivative(A, gradOut); // gradOut * (1 - 0^2) = 1.0
+
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[0], 1.0f));
+}
+
+BIT_TEST_CASE(ReluDerivativeBatch) {
+    using Act = BitMth::ia::ActivationFunctions<float>;
+    using Matrix = BitMth::linalg::Matrix<float>;
+
+    Matrix Z(2, 3);
+    Z.getValues()[0] = -5.0f; Z.getValues()[1] = 0.0f; Z.getValues()[2] = 3.0f; // Fila 0
+    Z.getValues()[3] =  1.2f; Z.getValues()[4] = -0.1f; Z.getValues()[5] = 0.0f; // Fila 1
+
+    Matrix A = Act::relu(Z);
+    
+    // Gradiente entrante con escalar 2.0f para verificar que el gradiente se propaga multiplicando
+    Matrix gradOut(2, 3);
+    for (size_t i = 0; i < 6; ++i) gradOut.getValues()[i] = 2.0f;
+
+    Matrix dZ = Act::reluDerivative(A, gradOut);
+
+    BIT_ASSERT_EQ(dZ.getRows(), size_t(2));
+    BIT_ASSERT_EQ(dZ.getCols(), size_t(3));
+
+    // Fila 0 (dZ = gradOut * (A > 0))
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[0], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[1], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[2], 2.0f)); // 2.0 * 1.0
+
+    // Fila 1
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[3], 2.0f)); // 2.0 * 1.0
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[4], 0.0f));
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[5], 0.0f));
+}
+
+BIT_TEST_CASE(SigmoidDerivativeBatch) {
+    using Act = BitMth::ia::ActivationFunctions<double>;
+    using Matrix = BitMth::linalg::Matrix<double>;
+
+    Matrix A(2, 2);
+    A.getValues()[0] = 0.5; A.getValues()[1] = 1.0; // Fila 0
+    A.getValues()[2] = 0.0; A.getValues()[3] = 0.2; // Fila 1
+
+    Matrix gradOut(2, 2);
+    for (size_t i = 0; i < 4; ++i) gradOut.getValues()[i] = 1.0;
+
+    Matrix dZ = Act::sigmoidDerivative(A, gradOut);
+
+    // Formula: gradOut * A * (1 - A)
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[0], 0.25)); // 1.0 * 0.5 * 0.5
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[1], 0.00)); // 1.0 * 1.0 * 0.0
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[2], 0.00)); // 1.0 * 0.0 * 1.0
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[3], 0.16)); // 1.0 * 0.2 * 0.8
+}
+
+BIT_TEST_CASE(TanhDerivativeBatch) {
+    using Act = BitMth::ia::ActivationFunctions<float>;
+    using Matrix = BitMth::linalg::Matrix<float>;
+
+    Matrix A(2, 2);
+    A.getValues()[0] = 0.0f; A.getValues()[1] = 0.5f;  // Fila 0
+    A.getValues()[2] = 1.0f; A.getValues()[3] = -0.5f; // Fila 1
+
+    Matrix gradOut(2, 2);
+    for (size_t i = 0; i < 4; ++i) gradOut.getValues()[i] = 1.0f;
+
+    Matrix dZ = Act::tanhDerivative(A, gradOut);
+
+    // Formula: gradOut * (1 - A^2)
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[0], 1.00f)); // 1.0 * (1 - 0)
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[1], 0.75f)); // 1.0 * (1 - 0.25)
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[2], 0.00f)); // 1.0 * (1 - 1)
+    BIT_EXPECT_TRUE(BitMth::utils::isClose(dZ.getValues()[3], 0.75f)); // 1.0 * (1 - 0.25)
 }
 
 BIT_GROUP_END()
