@@ -9,6 +9,7 @@
 namespace BitMth::linalg{
     template <typename T>
     class [[nodiscard]] Vec2{
+        public:
         T x{0}, y{0};
 
         Vec2(T x, T y): x(x), y(y){}
