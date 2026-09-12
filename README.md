@@ -82,7 +82,7 @@ cmake --build .
 
 This project is used in conjunction with:
 - [EasySDL](https://github.com/MaisenRv/EasySDL) - SDL2 wrapper for C++
-- [neural-network-from-scratch](https://github.com/MaisenRv/neural-network-from-scratch) - Python neural network implementation
+- [neural-network-from-scratch](https://github.com/MaisenRv/neural-network-from-scratch) - C++ neural network implementation
 
 ## License
 
